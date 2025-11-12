@@ -1,0 +1,60 @@
+# Agent 6: Fine-tuning with PyTorch/NeMo
+# Python 3.9+
+
+# Core PyTorch (CUDA 12.1)
+torch>=2.1.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
+
+# Distributed training
+pytorch-lightning>=2.1.0
+accelerate>=0.25.0
+
+# Transformers and NLP
+transformers>=4.36.0
+tokenizers>=0.15.0
+datasets>=2.16.0
+sentencepiece>=0.1.99
+
+# NeMo (optional, for NeMo playbook)
+# Install separately: pip install nemo_toolkit[all]
+# nemo-toolkit[all]>=1.22.0
+
+# Diffusion models (optional, for FLUX playbook)
+diffusers>=0.25.0
+peft>=0.7.0
+safetensors>=0.4.0
+
+# Image processing
+Pillow>=10.0.0
+opencv-python>=4.8.0
+
+# Optimization
+bitsandbytes>=0.41.0  # 8-bit optimizers
+xformers>=0.0.23      # Memory efficient attention
+
+# Data processing
+numpy>=1.24.0
+pandas>=2.0.0
+pyarrow>=14.0.0
+
+# Monitoring and logging
+tensorboard>=2.15.0
+wandb>=0.16.0
+mlflow>=2.9.0
+
+# Utilities
+tqdm>=4.66.0
+pyyaml>=6.0
+omegaconf>=2.3.0
+hydra-core>=1.3.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Code quality
+black>=23.12.0
+isort>=5.13.0
+flake8>=6.1.0
+mypy>=1.7.0

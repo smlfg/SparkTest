@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# PyTorch
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Checkpoints and logs
+/checkpoints/
+/logs/
+/wandb/
+/mlruns/
+/workspace/checkpoints/
+/workspace/logs/
+
+# Data
+/data/
+/workspace/data/
+*.h5
+*.hdf5
+*.tfrecord
+
+# NeMo
+*.nemo
+nemo_experiments/
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Documentation
+docs/_build/
+site/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.cache
