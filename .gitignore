@@ -1,0 +1,126 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+reports/
+.cache
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+spark/logs/
+
+# Data
+data/
+*.csv
+*.json
+*.parquet
+*.orc
+spark/data/*
+!spark/data/.gitkeep
+
+# Spark
+spark/jobs/*
+!spark/jobs/.gitkeep
+metastore_db/
+derby.log
+spark-warehouse/
+
+# Database
+*.db
+*.sqlite
+database/backups/
+
+# Redis
+dump.rdb
+appendonly.aof
+
+# Monitoring
+monitoring/grafana/data/
+monitoring/prometheus/data/
+
+# Reports
+reports/*
+!reports/.gitkeep
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Secrets
+secrets/
+*.key
+*.pem
+*.crt
+credentials.json
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar

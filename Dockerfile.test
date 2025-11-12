@@ -1,0 +1,32 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    postgresql-client \
+    redis-tools \
+    openjdk-17-jre-headless \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.test.txt .
+RUN pip install --no-cache-dir -r requirements.test.txt
+
+# Copy test files
+COPY tests/ /tests/
+COPY spark/ /opt/spark/
+
+# Set environment variables
+ENV PYTHONPATH=/app:/tests
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+# Create reports directory
+RUN mkdir -p /reports
+
+WORKDIR /tests
+
+CMD ["pytest", "-v", "--tb=short"]

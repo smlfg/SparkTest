@@ -1,0 +1,223 @@
+version: '3.8'
+
+services:
+  # Spark Master Node
+  spark-master:
+    image: bitnami/spark:3.5.0
+    container_name: sparktest-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      - ./spark/jobs:/opt/spark-jobs
+      - ./spark/data:/opt/spark-data
+      - ./spark/logs:/opt/spark/logs
+    networks:
+      - sparktest-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Spark Worker Node 1
+  spark-worker-1:
+    image: bitnami/spark:3.5.0
+    container_name: sparktest-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+    depends_on:
+      - spark-master
+    volumes:
+      - ./spark/jobs:/opt/spark-jobs
+      - ./spark/data:/opt/spark-data
+    networks:
+      - sparktest-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Spark Worker Node 2
+  spark-worker-2:
+    image: bitnami/spark:3.5.0
+    container_name: sparktest-worker-2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+    depends_on:
+      - spark-master
+    volumes:
+      - ./spark/jobs:/opt/spark-jobs
+      - ./spark/data:/opt/spark-data
+    networks:
+      - sparktest-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL Database (for metadata and results)
+  postgres:
+    image: postgres:15-alpine
+    container_name: sparktest-postgres
+    environment:
+      - POSTGRES_USER=sparktest
+      - POSTGRES_PASSWORD=sparktest123
+      - POSTGRES_DB=sparktest_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - sparktest-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sparktest"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (for caching and message queue)
+  redis:
+    image: redis:7-alpine
+    container_name: sparktest-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - sparktest-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Prometheus (for metrics collection)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sparktest-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - sparktest-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Grafana (for visualization)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: sparktest-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - sparktest-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway (for REST API access)
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: sparktest-api
+    environment:
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - DATABASE_URL=postgresql://sparktest:sparktest123@postgres:5432/sparktest_db
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "8000:8000"
+    depends_on:
+      - spark-master
+      - postgres
+      - redis
+    volumes:
+      - ./services/api-gateway:/app
+    networks:
+      - sparktest-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Test Runner (for integration tests)
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: sparktest-runner
+    environment:
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - DATABASE_URL=postgresql://sparktest:sparktest123@postgres:5432/sparktest_db
+      - REDIS_URL=redis://redis:6379
+      - API_URL=http://api-gateway:8000
+      - PYTEST_ARGS=${PYTEST_ARGS:--v}
+    depends_on:
+      - spark-master
+      - spark-worker-1
+      - spark-worker-2
+      - postgres
+      - redis
+      - api-gateway
+    volumes:
+      - ./tests:/tests
+      - ./reports:/reports
+      - ./spark/jobs:/opt/spark-jobs
+      - ./spark/data:/opt/spark-data
+    networks:
+      - sparktest-network
+    command: tail -f /dev/null  # Keep container running for manual test execution
+
+networks:
+  sparktest-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  prometheus-data:
+  grafana-data:

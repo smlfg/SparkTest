@@ -1,0 +1,44 @@
+# Testing Framework
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-xdist==3.5.0
+pytest-timeout==2.2.0
+pytest-benchmark==4.0.0
+pytest-mock==3.12.0
+
+# Spark Testing
+pyspark==3.5.0
+pytest-spark==0.6.0
+
+# HTTP Testing
+httpx==0.25.2
+requests==2.31.0
+aiohttp==3.9.1
+
+# Database Testing
+psycopg2-binary==2.9.9
+asyncpg==0.29.0
+sqlalchemy==2.0.23
+
+# Redis Testing
+redis==5.0.1
+fakeredis==2.20.1
+
+# Data Validation
+pandas==2.1.4
+numpy==1.26.2
+
+# Performance Testing
+locust==2.19.1
+py-spy==0.3.14
+
+# Utilities
+python-dotenv==1.0.0
+pyyaml==6.0.1
+faker==20.1.0
+
+# Reporting
+allure-pytest==2.13.2
+pytest-html==4.1.1
+pytest-json-report==1.5.0
