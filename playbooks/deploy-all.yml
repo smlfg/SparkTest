@@ -1,0 +1,145 @@
+---
+- name: Deploy Agent 5 Inference Engine - Complete Stack
+  hosts: localhost
+  gather_facts: yes
+  vars:
+    deployment_mode: "full"  # Options: full, ollama-only, nim-only
+
+  tasks:
+    - name: Display deployment information
+      debug:
+        msg:
+          - "═══════════════════════════════════════════════════════════"
+          - "     Agent 5 Inference Engine - Deployment Starting"
+          - "═══════════════════════════════════════════════════════════"
+          - "Deployment Mode: {{ deployment_mode }}"
+          - "Timestamp: {{ ansible_date_time.iso8601 }}"
+
+    - name: Check for required variables
+      assert:
+        that:
+          - deployment_mode in ['full', 'ollama-only', 'nim-only']
+        fail_msg: "Invalid deployment mode. Must be 'full', 'ollama-only', or 'nim-only'"
+
+- name: Deploy Ollama Infrastructure
+  import_playbook: ollama.yml
+  when: deployment_mode in ['full', 'ollama-only']
+
+- name: Deploy Open WebUI
+  import_playbook: open-webui.yml
+  when: deployment_mode in ['full', 'ollama-only']
+
+- name: Deploy NVIDIA NIM
+  import_playbook: nim-llm.yml
+  when: deployment_mode in ['full', 'nim-only']
+
+- name: Configure Model Management API
+  hosts: localhost
+  become: true
+  vars:
+    api_install_dir: "/opt/agent5-api"
+    api_venv_dir: "{{ api_install_dir }}/venv"
+    api_port: 8888
+
+  tasks:
+    - name: Create API installation directory
+      file:
+        path: "{{ api_install_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Install Python and pip
+      apt:
+        name:
+          - python3
+          - python3-pip
+          - python3-venv
+        state: present
+
+    - name: Copy API files
+      copy:
+        src: "../api/agent5_model_api.py"
+        dest: "{{ api_install_dir }}/agent5_model_api.py"
+        mode: '0755'
+
+    - name: Copy requirements file
+      copy:
+        src: "../requirements.txt"
+        dest: "{{ api_install_dir }}/requirements.txt"
+        mode: '0644'
+
+    - name: Create Python virtual environment
+      command: python3 -m venv {{ api_venv_dir }}
+      args:
+        creates: "{{ api_venv_dir }}/bin/activate"
+
+    - name: Install Python dependencies
+      pip:
+        requirements: "{{ api_install_dir }}/requirements.txt"
+        virtualenv: "{{ api_venv_dir }}"
+
+    - name: Create API systemd service
+      copy:
+        dest: /etc/systemd/system/agent5-api.service
+        content: |
+          [Unit]
+          Description=Agent 5 Model Management API
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=root
+          WorkingDirectory={{ api_install_dir }}
+          Environment="PATH={{ api_venv_dir }}/bin"
+          Environment="OLLAMA_BASE_URL=http://localhost:11434"
+          Environment="NIM_BASE_URL=http://localhost:8000"
+          Environment="API_HOST=0.0.0.0"
+          Environment="API_PORT={{ api_port }}"
+          ExecStart={{ api_venv_dir }}/bin/python {{ api_install_dir }}/agent5_model_api.py
+          Restart=on-failure
+          RestartSec=5s
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Start and enable API service
+      systemd:
+        name: agent5-api
+        state: started
+        enabled: yes
+
+    - name: Wait for API to be ready
+      uri:
+        url: "http://localhost:{{ api_port }}/health"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 30
+      delay: 2
+
+    - name: Display deployment summary
+      debug:
+        msg:
+          - "═══════════════════════════════════════════════════════════"
+          - "     Agent 5 Inference Engine - Deployment Complete"
+          - "═══════════════════════════════════════════════════════════"
+          - ""
+          - "Services Status:"
+          - "  ✓ Ollama: http://{{ ansible_default_ipv4.address }}:11434"
+          - "  ✓ Open WebUI: http://{{ ansible_default_ipv4.address }}:8080"
+          - "  ✓ NIM Gateway: http://{{ ansible_default_ipv4.address }}:8000"
+          - "  ✓ Model API: http://{{ ansible_default_ipv4.address }}:{{ api_port }}"
+          - ""
+          - "API Endpoints:"
+          - "  - List Models: GET /api/models"
+          - "  - Completion: POST /api/completion"
+          - "  - Chat: POST /api/chat"
+          - "  - Health: GET /health"
+          - ""
+          - "Documentation: See README.md for usage examples"
+          - "═══════════════════════════════════════════════════════════"

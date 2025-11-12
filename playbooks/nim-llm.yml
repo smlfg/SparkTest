@@ -1,0 +1,272 @@
+---
+- name: Deploy NVIDIA NIM (Inference Microservices)
+  hosts: nim_servers
+  become: true
+  vars:
+    nim_version: "latest"
+    nim_port: 8000
+    nim_data_dir: "/var/lib/nim"
+    nim_cache_dir: "/var/cache/nim"
+    nvidia_api_key: "{{ lookup('env', 'NGC_API_KEY') }}"
+    nim_models:
+      - name: "llama-3.1-405b-instruct"
+        image: "nvcr.io/nim/meta/llama-3.1-405b-instruct:latest"
+        port: 8001
+      - name: "llama-3.1-70b-instruct"
+        image: "nvcr.io/nim/meta/llama-3.1-70b-instruct:latest"
+        port: 8002
+
+  pre_tasks:
+    - name: Check for NGC API key
+      fail:
+        msg: "NGC_API_KEY environment variable is required. Set it with your NVIDIA NGC API key."
+      when: nvidia_api_key == ""
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - gnupg
+          - ca-certificates
+          - nvidia-driver-535
+          - nvidia-utils-535
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Install NVIDIA Container Toolkit
+      apt:
+        name: nvidia-container-toolkit
+        state: present
+
+    - name: Configure Docker to use NVIDIA runtime
+      copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+            "runtimes": {
+              "nvidia": {
+                "path": "nvidia-container-runtime",
+                "runtimeArgs": []
+              }
+            }
+          }
+        mode: '0644'
+      notify: Restart Docker
+
+    - name: Create NIM directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "{{ nim_data_dir }}"
+        - "{{ nim_cache_dir }}"
+        - "{{ nim_data_dir }}/models"
+        - "{{ nim_data_dir }}/logs"
+
+    - name: Login to NVIDIA NGC registry
+      docker_login:
+        registry: nvcr.io
+        username: "$oauthtoken"
+        password: "{{ nvidia_api_key }}"
+        reauthorize: yes
+
+    - name: Create Docker network for NIM services
+      docker_network:
+        name: nim-network
+        state: present
+
+    - name: Deploy NIM model containers
+      docker_container:
+        name: "nim-{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "{{ item.port }}:8000"
+        volumes:
+          - "{{ nim_cache_dir }}:/opt/nim/.cache"
+          - "{{ nim_data_dir }}/models:/models"
+          - "{{ nim_data_dir }}/logs:/logs"
+        runtime: nvidia
+        networks:
+          - name: nim-network
+        env:
+          NGC_API_KEY: "{{ nvidia_api_key }}"
+          NVIDIA_VISIBLE_DEVICES: "all"
+          NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+          NIM_CACHE_PATH: "/opt/nim/.cache"
+          NIM_MODEL_PROFILE: "auto"
+        shm_size: "16G"
+        device_requests:
+          - driver: nvidia
+            count: -1
+            capabilities:
+              - - gpu
+      loop: "{{ nim_models }}"
+      register: nim_containers
+
+    - name: Wait for NIM services to be ready
+      uri:
+        url: "http://localhost:{{ item.port }}/v1/health/ready"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 60
+      delay: 10
+      loop: "{{ nim_models }}"
+
+    - name: Create NIM API Gateway container
+      docker_container:
+        name: nim-gateway
+        image: nginx:alpine
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "{{ nim_port }}:80"
+        networks:
+          - name: nim-network
+        volumes:
+          - "{{ nim_data_dir }}/nginx.conf:/etc/nginx/nginx.conf:ro"
+
+    - name: Configure Nginx as API Gateway
+      copy:
+        dest: "{{ nim_data_dir }}/nginx.conf"
+        content: |
+          events {
+              worker_connections 1024;
+          }
+
+          http {
+              upstream nim_backends {
+                  least_conn;
+                  {% for model in nim_models %}
+                  server nim-{{ model.name }}:8000;
+                  {% endfor %}
+              }
+
+              server {
+                  listen 80;
+
+                  location /v1/models {
+                      proxy_pass http://nim_backends;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  }
+
+                  location /v1/completions {
+                      proxy_pass http://nim_backends;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_read_timeout 300s;
+                  }
+
+                  location /v1/chat/completions {
+                      proxy_pass http://nim_backends;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_read_timeout 300s;
+                  }
+
+                  location /health {
+                      access_log off;
+                      return 200 "healthy\n";
+                      add_header Content-Type text/plain;
+                  }
+              }
+          }
+        mode: '0644'
+      notify: Restart NIM Gateway
+
+    - name: Create systemd services for NIM containers
+      copy:
+        dest: "/etc/systemd/system/nim-{{ item.name }}-container.service"
+        content: |
+          [Unit]
+          Description=NIM {{ item.name }} Container
+          After=docker.service
+          Requires=docker.service
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStart=/usr/bin/docker start nim-{{ item.name }}
+          ExecStop=/usr/bin/docker stop nim-{{ item.name }}
+          Restart=on-failure
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+      loop: "{{ nim_models }}"
+      notify: Reload systemd
+
+    - name: Enable NIM systemd services
+      systemd:
+        name: "nim-{{ item.name }}-container"
+        enabled: yes
+        daemon_reload: yes
+      loop: "{{ nim_models }}"
+
+    - name: Create NIM monitoring script
+      copy:
+        dest: "{{ nim_data_dir }}/monitor.sh"
+        content: |
+          #!/bin/bash
+          # NIM Health Monitoring Script
+
+          echo "=== NIM Services Status ==="
+          {% for model in nim_models %}
+          echo "Checking nim-{{ model.name }}..."
+          curl -s http://localhost:{{ model.port }}/v1/health/ready && echo "✓ nim-{{ model.name }} is ready" || echo "✗ nim-{{ model.name }} is not ready"
+          {% endfor %}
+
+          echo ""
+          echo "=== GPU Status ==="
+          nvidia-smi --query-gpu=index,name,utilization.gpu,memory.used,memory.total --format=csv
+        mode: '0755'
+
+    - name: Display NIM deployment information
+      debug:
+        msg:
+          - "NIM services are deployed successfully!"
+          - "API Gateway: http://{{ ansible_default_ipv4.address }}:{{ nim_port }}"
+          - "Available endpoints:"
+          {% for model in nim_models %}
+          - "  - {{ model.name }}: http://{{ ansible_default_ipv4.address }}:{{ model.port }}"
+          {% endfor %}
+          - "Monitor script: {{ nim_data_dir }}/monitor.sh"
+          - "Use OpenAI-compatible API format for requests"
+
+  handlers:
+    - name: Restart Docker
+      systemd:
+        name: docker
+        state: restarted
+
+    - name: Restart NIM Gateway
+      docker_container:
+        name: nim-gateway
+        state: restarted
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes

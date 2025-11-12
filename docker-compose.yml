@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    restart: unless-stopped
+    networks:
+      - inference-network
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:latest
+    container_name: open-webui
+    ports:
+      - "8080:8080"
+    volumes:
+      - webui-data:/app/backend/data
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_NAME=Agent5 Inference Engine
+      - WEBUI_AUTH=true
+      - ENABLE_SIGNUP=true
+      - DEFAULT_MODELS=llama3.1:70b,mistral:7b
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    networks:
+      - inference-network
+
+  nim-llama-405b:
+    image: nvcr.io/nim/meta/llama-3.1-405b-instruct:latest
+    container_name: nim-llama-405b
+    ports:
+      - "8001:8000"
+    volumes:
+      - nim-cache:/opt/nim/.cache
+      - nim-models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NGC_API_KEY=${NGC_API_KEY}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - NIM_CACHE_PATH=/opt/nim/.cache
+      - NIM_MODEL_PROFILE=auto
+    shm_size: '16gb'
+    restart: unless-stopped
+    networks:
+      - inference-network
+
+  nim-llama-70b:
+    image: nvcr.io/nim/meta/llama-3.1-70b-instruct:latest
+    container_name: nim-llama-70b
+    ports:
+      - "8002:8000"
+    volumes:
+      - nim-cache:/opt/nim/.cache
+      - nim-models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NGC_API_KEY=${NGC_API_KEY}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - NIM_CACHE_PATH=/opt/nim/.cache
+      - NIM_MODEL_PROFILE=auto
+    shm_size: '16gb'
+    restart: unless-stopped
+    networks:
+      - inference-network
+
+  agent5-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: agent5-api
+    ports:
+      - "8888:8888"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - NIM_BASE_URL=http://nim-gateway:80
+      - NGC_API_KEY=${NGC_API_KEY}
+      - API_HOST=0.0.0.0
+      - API_PORT=8888
+    depends_on:
+      - ollama
+      - nim-gateway
+    restart: unless-stopped
+    networks:
+      - inference-network
+
+  nim-gateway:
+    image: nginx:alpine
+    container_name: nim-gateway
+    ports:
+      - "8000:80"
+    volumes:
+      - ./configs/nginx-nim.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - nim-llama-405b
+      - nim-llama-70b
+    restart: unless-stopped
+    networks:
+      - inference-network
+
+volumes:
+  ollama-data:
+    driver: local
+  webui-data:
+    driver: local
+  nim-cache:
+    driver: local
+  nim-models:
+    driver: local
+
+networks:
+  inference-network:
+    driver: bridge

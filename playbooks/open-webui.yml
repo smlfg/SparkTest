@@ -1,0 +1,172 @@
+---
+- name: Deploy Open WebUI Frontend
+  hosts: webui_servers
+  become: true
+  vars:
+    webui_version: "latest"
+    webui_port: 8080
+    webui_data_dir: "/var/lib/open-webui"
+    ollama_base_url: "http://ollama:11434"
+    webui_name: "Agent5 Inference Engine"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create Open WebUI data directory
+      file:
+        path: "{{ webui_data_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create Docker network for Ollama and WebUI
+      docker_network:
+        name: ollama-network
+        state: present
+
+    - name: Connect Ollama container to network (if exists)
+      command: docker network connect ollama-network ollama
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Pull Open WebUI Docker image
+      docker_image:
+        name: "ghcr.io/open-webui/open-webui:{{ webui_version }}"
+        source: pull
+        state: present
+
+    - name: Deploy Open WebUI container
+      docker_container:
+        name: open-webui
+        image: "ghcr.io/open-webui/open-webui:{{ webui_version }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "{{ webui_port }}:8080"
+        volumes:
+          - "{{ webui_data_dir }}:/app/backend/data"
+        networks:
+          - name: ollama-network
+        env:
+          OLLAMA_BASE_URL: "{{ ollama_base_url }}"
+          WEBUI_NAME: "{{ webui_name }}"
+          WEBUI_AUTH: "true"
+          WEBUI_SECRET_KEY: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+          ENABLE_SIGNUP: "true"
+          DEFAULT_MODELS: "llama3.1:70b,mistral:7b"
+
+    - name: Wait for Open WebUI to be ready
+      uri:
+        url: "http://localhost:{{ webui_port }}"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 30
+      delay: 2
+
+    - name: Create systemd service for Open WebUI
+      copy:
+        dest: /etc/systemd/system/open-webui-container.service
+        content: |
+          [Unit]
+          Description=Open WebUI Container
+          After=docker.service ollama-container.service
+          Requires=docker.service
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStart=/usr/bin/docker start open-webui
+          ExecStop=/usr/bin/docker stop open-webui
+          Restart=on-failure
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+      notify: Reload systemd
+
+    - name: Enable Open WebUI systemd service
+      systemd:
+        name: open-webui-container
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Configure Nginx reverse proxy (optional)
+      block:
+        - name: Install Nginx
+          apt:
+            name: nginx
+            state: present
+
+        - name: Configure Nginx for Open WebUI
+          copy:
+            dest: /etc/nginx/sites-available/open-webui
+            content: |
+              server {
+                  listen 80;
+                  server_name _;
+
+                  location / {
+                      proxy_pass http://localhost:{{ webui_port }};
+                      proxy_http_version 1.1;
+                      proxy_set_header Upgrade $http_upgrade;
+                      proxy_set_header Connection 'upgrade';
+                      proxy_set_header Host $host;
+                      proxy_cache_bypass $http_upgrade;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_set_header X-Forwarded-Proto $scheme;
+                  }
+              }
+            mode: '0644'
+
+        - name: Enable Nginx site
+          file:
+            src: /etc/nginx/sites-available/open-webui
+            dest: /etc/nginx/sites-enabled/open-webui
+            state: link
+          notify: Restart Nginx
+
+        - name: Remove default Nginx site
+          file:
+            path: /etc/nginx/sites-enabled/default
+            state: absent
+          notify: Restart Nginx
+
+      when: enable_nginx | default(false)
+
+    - name: Display Open WebUI status
+      debug:
+        msg:
+          - "Open WebUI is running on http://{{ ansible_default_ipv4.address }}:{{ webui_port }}"
+          - "Default credentials: Create an account on first login"
+          - "Connected to Ollama at: {{ ollama_base_url }}"
+
+  handlers:
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Restart Nginx
+      systemd:
+        name: nginx
+        state: restarted
