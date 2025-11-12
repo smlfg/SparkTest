@@ -1,0 +1,34 @@
+# Agent 8: Data Analytics And Processing Agent Configuration
+
+playbook:
+  name: "agent8_analytics"
+  version: "1.0.0"
+  description: "Data analytics and processing agent"
+
+  dependencies: []
+
+  ports:
+    - 8008
+
+  volumes:
+    - "./agents/agent8_analytics/data:/app/data"
+    - "./agents/agent8_analytics/logs:/app/logs"
+    - "./shared:/app/shared"
+
+  gpu_required: true
+  gpu_count: 1
+
+  resources:
+    memory: "8g"
+    cpus: 4.0
+
+  environment:
+    LOG_LEVEL: "INFO"
+    ENVIRONMENT: "production"
+    AGENT_NAME: "agent8_analytics"
+
+  health_check:
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    retries: 3

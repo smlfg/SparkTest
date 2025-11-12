@@ -1,0 +1,34 @@
+# Agent 7: Security And Access Control Agent Configuration
+
+playbook:
+  name: "agent7_security"
+  version: "1.0.0"
+  description: "Security and access control agent"
+
+  dependencies: []
+
+  ports:
+    - 8007
+
+  volumes:
+    - "./agents/agent7_security/data:/app/data"
+    - "./agents/agent7_security/logs:/app/logs"
+    - "./shared:/app/shared"
+
+  gpu_required: true
+  gpu_count: 1
+
+  resources:
+    memory: "8g"
+    cpus: 4.0
+
+  environment:
+    LOG_LEVEL: "INFO"
+    ENVIRONMENT: "production"
+    AGENT_NAME: "agent7_security"
+
+  health_check:
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    retries: 3

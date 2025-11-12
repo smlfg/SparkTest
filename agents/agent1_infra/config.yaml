@@ -1,0 +1,34 @@
+# Agent 1: Infrastructure Management Agent Configuration
+
+playbook:
+  name: "agent1_infra"
+  version: "1.0.0"
+  description: "Infrastructure management and resource allocation agent"
+
+  dependencies: []
+
+  ports:
+    - 8001
+
+  volumes:
+    - "./agents/agent1_infra/data:/app/data"
+    - "./agents/agent1_infra/logs:/app/logs"
+    - "./shared:/app/shared"
+
+  gpu_required: true
+  gpu_count: 1
+
+  resources:
+    memory: "8g"
+    cpus: 4.0
+
+  environment:
+    LOG_LEVEL: "INFO"
+    ENVIRONMENT: "production"
+    AGENT_NAME: "agent1_infra"
+
+  health_check:
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    retries: 3

@@ -1,0 +1,34 @@
+# Agent 6: System Monitoring And Metrics Collection Agent Configuration
+
+playbook:
+  name: "agent6_monitoring"
+  version: "1.0.0"
+  description: "System monitoring and metrics collection agent"
+
+  dependencies: []
+
+  ports:
+    - 8006
+
+  volumes:
+    - "./agents/agent6_monitoring/data:/app/data"
+    - "./agents/agent6_monitoring/logs:/app/logs"
+    - "./shared:/app/shared"
+
+  gpu_required: true
+  gpu_count: 1
+
+  resources:
+    memory: "8g"
+    cpus: 4.0
+
+  environment:
+    LOG_LEVEL: "INFO"
+    ENVIRONMENT: "production"
+    AGENT_NAME: "agent6_monitoring"
+
+  health_check:
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    retries: 3

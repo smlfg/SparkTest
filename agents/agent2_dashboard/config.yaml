@@ -1,0 +1,34 @@
+# Agent 2: Dashboard And Visualization Agent Configuration
+
+playbook:
+  name: "agent2_dashboard"
+  version: "1.0.0"
+  description: "Dashboard and visualization agent"
+
+  dependencies: []
+
+  ports:
+    - 8002
+
+  volumes:
+    - "./agents/agent2_dashboard/data:/app/data"
+    - "./agents/agent2_dashboard/logs:/app/logs"
+    - "./shared:/app/shared"
+
+  gpu_required: true
+  gpu_count: 1
+
+  resources:
+    memory: "8g"
+    cpus: 4.0
+
+  environment:
+    LOG_LEVEL: "INFO"
+    ENVIRONMENT: "production"
+    AGENT_NAME: "agent2_dashboard"
+
+  health_check:
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    retries: 3

@@ -1,0 +1,130 @@
+# shared/config_schema.yaml
+# Unified configuration schema for all agent playbooks
+
+# Schema definition for agent playbooks
+schema_version: "1.0.0"
+
+# Playbook configuration structure
+playbook:
+  # Agent identification
+  name:
+    type: string
+    required: true
+    description: "Unique name of the agent/playbook"
+
+  version:
+    type: string
+    required: true
+    description: "Semantic version of the playbook (e.g., 1.0.0)"
+
+  description:
+    type: string
+    required: true
+    description: "Brief description of the agent's purpose"
+
+  # Dependencies
+  dependencies:
+    type: list
+    items: string
+    required: false
+    default: []
+    description: "List of other agent names this playbook depends on"
+
+  # Network configuration
+  ports:
+    type: list
+    items: integer
+    required: true
+    description: "List of ports to expose (e.g., [8000, 8001])"
+
+  # Storage configuration
+  volumes:
+    type: list
+    items: string
+    required: false
+    default: []
+    description: "List of volume mounts (e.g., ['./data:/app/data', './logs:/app/logs'])"
+
+  # GPU configuration
+  gpu_required:
+    type: boolean
+    required: true
+    default: false
+    description: "Whether this agent requires GPU access"
+
+  gpu_count:
+    type: integer
+    required: false
+    default: 1
+    description: "Number of GPUs required (if gpu_required is true)"
+
+  # Resource limits
+  resources:
+    memory:
+      type: string
+      required: false
+      default: "4g"
+      description: "Memory limit (e.g., '4g', '8g')"
+
+    cpus:
+      type: number
+      required: false
+      default: 2.0
+      description: "CPU limit (e.g., 2.0, 4.0)"
+
+  # Environment variables
+  environment:
+    type: object
+    required: false
+    default: {}
+    description: "Key-value pairs for environment variables"
+
+  # Health check configuration
+  health_check:
+    endpoint:
+      type: string
+      required: false
+      default: "/health"
+      description: "Health check endpoint path"
+
+    interval:
+      type: integer
+      required: false
+      default: 30
+      description: "Health check interval in seconds"
+
+    timeout:
+      type: integer
+      required: false
+      default: 10
+      description: "Health check timeout in seconds"
+
+    retries:
+      type: integer
+      required: false
+      default: 3
+      description: "Number of retries before marking unhealthy"
+
+# Example playbook configuration
+example:
+  name: "agent1_infra"
+  version: "1.0.0"
+  description: "Infrastructure management agent"
+  dependencies: []
+  ports: [8001]
+  volumes:
+    - "./agents/agent1_infra/data:/app/data"
+    - "./shared:/app/shared"
+  gpu_required: true
+  gpu_count: 1
+  resources:
+    memory: "8g"
+    cpus: 4.0
+  environment:
+    LOG_LEVEL: "INFO"
+    ENVIRONMENT: "production"
+  health_check:
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    retries: 3

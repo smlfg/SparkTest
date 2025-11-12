@@ -1,0 +1,34 @@
+# Agent 3: Distributed Compute Orchestration Agent Configuration
+
+playbook:
+  name: "agent3_compute"
+  version: "1.0.0"
+  description: "Distributed compute orchestration agent"
+
+  dependencies: []
+
+  ports:
+    - 8003
+
+  volumes:
+    - "./agents/agent3_compute/data:/app/data"
+    - "./agents/agent3_compute/logs:/app/logs"
+    - "./shared:/app/shared"
+
+  gpu_required: true
+  gpu_count: 1
+
+  resources:
+    memory: "8g"
+    cpus: 4.0
+
+  environment:
+    LOG_LEVEL: "INFO"
+    ENVIRONMENT: "production"
+    AGENT_NAME: "agent3_compute"
+
+  health_check:
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    retries: 3

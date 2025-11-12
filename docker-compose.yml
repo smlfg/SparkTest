@@ -1,0 +1,392 @@
+version: '3.8'
+
+# DGX Spark Playbooks - Docker Compose Configuration
+# Orchestrates all 10 agents with GPU support and shared interfaces
+
+services:
+  # Agent 1: Infrastructure Management
+  agent1_infra:
+    build:
+      context: .
+      dockerfile: agents/agent1_infra/Dockerfile
+    container_name: agent1_infra
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./agents/agent1_infra/data:/app/data
+      - ./agents/agent1_infra/logs:/app/logs
+      - ./shared:/app/shared:ro
+    environment:
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      - AGENT_NAME=agent1_infra
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+          cpus: '4.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - spark_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from shared.health_check import check_service; import sys; sys.exit(0 if check_service(8001, '/health') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Agent 2: Dashboard and Visualization
+  agent2_dashboard:
+    build:
+      context: .
+      dockerfile: agents/agent2_dashboard/Dockerfile
+    container_name: agent2_dashboard
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./agents/agent2_dashboard/data:/app/data
+      - ./agents/agent2_dashboard/logs:/app/logs
+      - ./shared:/app/shared:ro
+    environment:
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      - AGENT_NAME=agent2_dashboard
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+          cpus: '4.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - spark_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from shared.health_check import check_service; import sys; sys.exit(0 if check_service(8002, '/health') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Agent 3: Distributed Compute Orchestration
+  agent3_compute:
+    build:
+      context: .
+      dockerfile: agents/agent3_compute/Dockerfile
+    container_name: agent3_compute
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./agents/agent3_compute/data:/app/data
+      - ./agents/agent3_compute/logs:/app/logs
+      - ./shared:/app/shared:ro
+    environment:
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      - AGENT_NAME=agent3_compute
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+          cpus: '4.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - spark_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from shared.health_check import check_service; import sys; sys.exit(0 if check_service(8003, '/health') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Agent 4: Data Storage and Management
+  agent4_storage:
+    build:
+      context: .
+      dockerfile: agents/agent4_storage/Dockerfile
+    container_name: agent4_storage
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./agents/agent4_storage/data:/app/data
+      - ./agents/agent4_storage/logs:/app/logs
+      - ./shared:/app/shared:ro
+    environment:
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      - AGENT_NAME=agent4_storage
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+          cpus: '4.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - spark_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from shared.health_check import check_service; import sys; sys.exit(0 if check_service(8004, '/health') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Agent 5: Network Configuration and Routing
+  agent5_networking:
+    build:
+      context: .
+      dockerfile: agents/agent5_networking/Dockerfile
+    container_name: agent5_networking
+    ports:
+      - "8005:8005"
+    volumes:
+      - ./agents/agent5_networking/data:/app/data
+      - ./agents/agent5_networking/logs:/app/logs
+      - ./shared:/app/shared:ro
+    environment:
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      - AGENT_NAME=agent5_networking
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+          cpus: '4.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - spark_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from shared.health_check import check_service; import sys; sys.exit(0 if check_service(8005, '/health') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Agent 6: System Monitoring and Metrics
+  agent6_monitoring:
+    build:
+      context: .
+      dockerfile: agents/agent6_monitoring/Dockerfile
+    container_name: agent6_monitoring
+    ports:
+      - "8006:8006"
+    volumes:
+      - ./agents/agent6_monitoring/data:/app/data
+      - ./agents/agent6_monitoring/logs:/app/logs
+      - ./shared:/app/shared:ro
+    environment:
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      - AGENT_NAME=agent6_monitoring
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+          cpus: '4.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - spark_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from shared.health_check import check_service; import sys; sys.exit(0 if check_service(8006, '/health') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Agent 7: Security and Access Control
+  agent7_security:
+    build:
+      context: .
+      dockerfile: agents/agent7_security/Dockerfile
+    container_name: agent7_security
+    ports:
+      - "8007:8007"
+    volumes:
+      - ./agents/agent7_security/data:/app/data
+      - ./agents/agent7_security/logs:/app/logs
+      - ./shared:/app/shared:ro
+    environment:
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      - AGENT_NAME=agent7_security
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+          cpus: '4.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - spark_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from shared.health_check import check_service; import sys; sys.exit(0 if check_service(8007, '/health') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Agent 8: Data Analytics and Processing
+  agent8_analytics:
+    build:
+      context: .
+      dockerfile: agents/agent8_analytics/Dockerfile
+    container_name: agent8_analytics
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./agents/agent8_analytics/data:/app/data
+      - ./agents/agent8_analytics/logs:/app/logs
+      - ./shared:/app/shared:ro
+    environment:
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      - AGENT_NAME=agent8_analytics
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+          cpus: '4.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - spark_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from shared.health_check import check_service; import sys; sys.exit(0 if check_service(8008, '/health') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Agent 9: Workflow Orchestration
+  agent9_orchestration:
+    build:
+      context: .
+      dockerfile: agents/agent9_orchestration/Dockerfile
+    container_name: agent9_orchestration
+    ports:
+      - "8009:8009"
+    volumes:
+      - ./agents/agent9_orchestration/data:/app/data
+      - ./agents/agent9_orchestration/logs:/app/logs
+      - ./shared:/app/shared:ro
+    environment:
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      - AGENT_NAME=agent9_orchestration
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+          cpus: '4.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - spark_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from shared.health_check import check_service; import sys; sys.exit(0 if check_service(8009, '/health') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Agent 10: External Systems Integration
+  agent10_integration:
+    build:
+      context: .
+      dockerfile: agents/agent10_integration/Dockerfile
+    container_name: agent10_integration
+    ports:
+      - "8010:8010"
+    volumes:
+      - ./agents/agent10_integration/data:/app/data
+      - ./agents/agent10_integration/logs:/app/logs
+      - ./shared:/app/shared:ro
+    environment:
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      - AGENT_NAME=agent10_integration
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+          cpus: '4.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - spark_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from shared.health_check import check_service; import sys; sys.exit(0 if check_service(8010, '/health') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  spark_network:
+    driver: bridge
+    name: spark_network
+
+volumes:
+  agent1_data:
+  agent2_data:
+  agent3_data:
+  agent4_data:
+  agent5_data:
+  agent6_data:
+  agent7_data:
+  agent8_data:
+  agent9_data:
+  agent10_data:
