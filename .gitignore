@@ -1,0 +1,118 @@
+# Agent 3 Development Environments - Git Ignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+.mypy_cache/
+.venv/
+venv/
+ENV/
+env/
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb_checkpoints
+notebooks/.ipynb_checkpoints/
+
+# JAX / ML
+logs/
+tensorboard_logs/
+checkpoints/
+*.ckpt
+*.pkl
+*.h5
+*.pb
+
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# C/C++
+*.o
+*.a
+*.out
+*.so
+*.dylib
+build/
+cmake-build-*/
+.cmake/
+CMakeCache.txt
+CMakeFiles/
+compile_commands.json
+
+# IDEs
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker / Containers
+agent3/containers/workspace/
+agent3/containers/notebooks/
+agent3/containers/logs/
+*.log
+
+# VS Code Server
+.config/code-server/
+.local/share/code-server/
+
+# Environment files
+.env
+.env.local
+*.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# Node modules (if any)
+node_modules/
+
+# Package manager
+.npm/
+.yarn/

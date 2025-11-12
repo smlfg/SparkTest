@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  jax-dev:
+    build:
+      context: .
+      dockerfile: jax-arm64.Dockerfile
+    image: agent3/jax-arm64:latest
+    container_name: jax-dev-environment
+    hostname: jax-dev
+
+    # Resource limits and reservations
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 16G
+        reservations:
+          cpus: '4'
+          memory: 8G
+
+    # GPU support (for systems with ARM GPUs)
+    # Uncomment and configure based on your GPU setup
+    # runtime: nvidia
+    # environment:
+    #   - NVIDIA_VISIBLE_DEVICES=all
+    #   - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+    environment:
+      - JAX_PLATFORM_NAME=cpu
+      - XLA_FLAGS=--xla_force_host_platform_device_count=8
+      - JAX_ENABLE_X64=True
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=jaxdev123
+
+    volumes:
+      - ./workspace:/workspace
+      - ./notebooks:/workspace/notebooks
+      - jax-cache:/home/jaxuser/.cache
+
+    ports:
+      - "8888:8888"  # Jupyter
+      - "6006:6006"  # TensorBoard
+
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+
+    stdin_open: true
+    tty: true
+
+    networks:
+      - jax-network
+
+  # Optional: TensorBoard service
+  tensorboard:
+    image: tensorflow/tensorflow:latest
+    container_name: jax-tensorboard
+    ports:
+      - "6007:6006"
+    volumes:
+      - ./logs:/logs
+    command: tensorboard --logdir=/logs --host=0.0.0.0 --port=6006
+    networks:
+      - jax-network
+
+volumes:
+  jax-cache:
+    driver: local
+
+networks:
+  jax-network:
+    driver: bridge

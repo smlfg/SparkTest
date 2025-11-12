@@ -1,0 +1,107 @@
+---
+# VS Code Remote Server Playbook
+# Configures and launches VS Code Server for remote development
+
+- name: Setup VS Code Remote Server
+  hosts: localhost
+  become: yes
+  vars:
+    vscode_version: "latest"
+    vscode_port: 8443
+    vscode_data_dir: "/opt/vscode-server"
+    vscode_user: "{{ ansible_user_id }}"
+
+  tasks:
+    - name: Create VS Code data directory
+      file:
+        path: "{{ vscode_data_dir }}"
+        state: directory
+        owner: "{{ vscode_user }}"
+        mode: '0755'
+
+    - name: Check if code-server is installed
+      command: which code-server
+      register: code_server_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Download and install code-server
+      block:
+        - name: Download code-server install script
+          get_url:
+            url: https://code-server.dev/install.sh
+            dest: /tmp/install-code-server.sh
+            mode: '0755'
+
+        - name: Install code-server
+          shell: /tmp/install-code-server.sh
+          args:
+            creates: /usr/bin/code-server
+      when: code_server_check.rc != 0
+
+    - name: Create code-server config directory
+      file:
+        path: "~/.config/code-server"
+        state: directory
+        owner: "{{ vscode_user }}"
+        mode: '0755'
+
+    - name: Configure code-server
+      copy:
+        dest: "~/.config/code-server/config.yaml"
+        owner: "{{ vscode_user }}"
+        mode: '0600'
+        content: |
+          bind-addr: 0.0.0.0:{{ vscode_port }}
+          auth: password
+          password: "{{ lookup('env', 'VSCODE_PASSWORD') | default('changeme123', true) }}"
+          cert: false
+          user-data-dir: {{ vscode_data_dir }}
+
+    - name: Install essential VS Code extensions
+      command: "code-server --install-extension {{ item }}"
+      loop:
+        - ms-python.python
+        - ms-toolsai.jupyter
+        - ms-vscode.cpptools
+        - golang.go
+        - rust-lang.rust-analyzer
+      become_user: "{{ vscode_user }}"
+      ignore_errors: yes
+
+    - name: Create systemd service for code-server
+      copy:
+        dest: /etc/systemd/system/code-server.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Code Server (VS Code Remote)
+          After=network.target
+
+          [Service]
+          Type=simple
+          User={{ vscode_user }}
+          Environment=PASSWORD={{ lookup('env', 'VSCODE_PASSWORD') | default('changeme123', true) }}
+          ExecStart=/usr/bin/code-server --bind-addr 0.0.0.0:{{ vscode_port }} --user-data-dir {{ vscode_data_dir }}
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start code-server service
+      systemd:
+        name: code-server
+        enabled: yes
+        state: started
+
+    - name: Display VS Code Server info
+      debug:
+        msg:
+          - "VS Code Server is running on port {{ vscode_port }}"
+          - "Access at: https://localhost:{{ vscode_port }}"
+          - "Default password: changeme123 (set VSCODE_PASSWORD to change)"

@@ -1,0 +1,82 @@
+---
+# JAX ARM64 Container Playbook
+# Manages JAX container lifecycle and configuration
+
+- name: Setup and Manage JAX ARM64 Container
+  hosts: localhost
+  vars:
+    jax_container_name: "jax-dev-environment"
+    jax_image: "agent3/jax-arm64:latest"
+    jax_workspace: "{{ playbook_dir }}/../containers/workspace"
+    jax_notebooks: "{{ playbook_dir }}/../containers/notebooks"
+    jupyter_port: 8888
+    tensorboard_port: 6006
+
+  tasks:
+    - name: Ensure Docker is installed
+      command: docker --version
+      register: docker_check
+      failed_when: docker_check.rc != 0
+      changed_when: false
+
+    - name: Create workspace directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "{{ jax_workspace }}"
+        - "{{ jax_notebooks }}"
+        - "{{ playbook_dir }}/../containers/logs"
+
+    - name: Check if JAX container is running
+      command: docker ps -q -f name={{ jax_container_name }}
+      register: container_running
+      changed_when: false
+
+    - name: Build JAX container image
+      command: >
+        docker build
+        -f {{ playbook_dir }}/../containers/jax-arm64.Dockerfile
+        -t {{ jax_image }}
+        {{ playbook_dir }}/../containers/
+      args:
+        chdir: "{{ playbook_dir }}/../containers"
+      when: container_running.stdout == ""
+
+    - name: Launch JAX container
+      command: >
+        docker run -d
+        --name {{ jax_container_name }}
+        --hostname jax-dev
+        -p {{ jupyter_port }}:8888
+        -p {{ tensorboard_port }}:6006
+        -v {{ jax_workspace }}:/workspace
+        -v {{ jax_notebooks }}:/workspace/notebooks
+        -e JAX_PLATFORM_NAME=cpu
+        -e XLA_FLAGS=--xla_force_host_platform_device_count=8
+        -e JAX_ENABLE_X64=True
+        -e JUPYTER_TOKEN=jaxdev123
+        {{ jax_image }}
+        jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+      when: container_running.stdout == ""
+
+    - name: Wait for Jupyter to be ready
+      wait_for:
+        port: "{{ jupyter_port }}"
+        delay: 5
+        timeout: 60
+
+    - name: Display JAX container info
+      debug:
+        msg:
+          - "JAX Container is running!"
+          - "Jupyter Lab: http://localhost:{{ jupyter_port }}"
+          - "Token: jaxdev123"
+          - "TensorBoard: http://localhost:{{ tensorboard_port }}"
+          - "Container name: {{ jax_container_name }}"
+          - ""
+          - "Useful commands:"
+          - "  docker exec -it {{ jax_container_name }} bash"
+          - "  docker logs {{ jax_container_name }}"
+          - "  docker stop {{ jax_container_name }}"
