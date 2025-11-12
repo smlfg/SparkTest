@@ -1,0 +1,52 @@
+[
+  {
+    "instruction": "Write a Python function that sums all elements in a list.",
+    "prompt": "def sum_list(numbers):\n    \"\"\"Sum all elements in a list.\"\"\"\n",
+    "canonical_solution": "    total = 0\n    for num in numbers:\n        total += num\n    return total\n"
+  },
+  {
+    "instruction": "Write a Python function that finds the maximum element in a list.",
+    "prompt": "def find_max(numbers):\n    \"\"\"Find the maximum element in a list.\"\"\"\n",
+    "canonical_solution": "    if not numbers:\n        return None\n    max_num = numbers[0]\n    for num in numbers:\n        if num > max_num:\n            max_num = num\n    return max_num\n"
+  },
+  {
+    "instruction": "Write a Python function that counts even numbers in a list.",
+    "prompt": "def count_evens(numbers):\n    \"\"\"Count how many even numbers are in a list.\"\"\"\n",
+    "canonical_solution": "    count = 0\n    for num in numbers:\n        if num % 2 == 0:\n            count += 1\n    return count\n"
+  },
+  {
+    "instruction": "Write a Python function that filters positive numbers from a list.",
+    "prompt": "def filter_positive(numbers):\n    \"\"\"Return a list containing only positive numbers.\"\"\"\n",
+    "canonical_solution": "    result = []\n    for num in numbers:\n        if num > 0:\n            result.append(num)\n    return result\n"
+  },
+  {
+    "instruction": "Write a Python function that checks if a list contains a specific element.",
+    "prompt": "def contains_element(lst, target):\n    \"\"\"Check if a list contains a specific element.\"\"\"\n",
+    "canonical_solution": "    for item in lst:\n        if item == target:\n            return True\n    return False\n"
+  },
+  {
+    "instruction": "Write a Python function that removes duplicates from a list.",
+    "prompt": "def remove_duplicates(lst):\n    \"\"\"Remove duplicates from a list.\"\"\"\n",
+    "canonical_solution": "    result = []\n    for item in lst:\n        if item not in result:\n            result.append(item)\n    return result\n"
+  },
+  {
+    "instruction": "Write a Python function that creates a range of numbers.",
+    "prompt": "def create_range(start, end):\n    \"\"\"Create a list of numbers from start to end (exclusive).\"\"\"\n",
+    "canonical_solution": "    result = []\n    i = start\n    while i < end:\n        result.append(i)\n        i += 1\n    return result\n"
+  },
+  {
+    "instruction": "Write a Python function that calculates factorial.",
+    "prompt": "def factorial(n):\n    \"\"\"Calculate factorial of n.\"\"\"\n",
+    "canonical_solution": "    if n == 0 or n == 1:\n        return 1\n    result = 1\n    for i in range(2, n + 1):\n        result *= i\n    return result\n"
+  },
+  {
+    "instruction": "Write a Python function that checks if a string is a palindrome.",
+    "prompt": "def is_palindrome(s):\n    \"\"\"Check if a string is a palindrome.\"\"\"\n",
+    "canonical_solution": "    return s == s[::-1]\n"
+  },
+  {
+    "instruction": "Write a Python function that counts vowels in a string.",
+    "prompt": "def count_vowels(s):\n    \"\"\"Count the number of vowels in a string.\"\"\"\n",
+    "canonical_solution": "    vowels = 'aeiouAEIOU'\n    count = 0\n    for char in s:\n        if char in vowels:\n            count += 1\n    return count\n"
+  }
+]

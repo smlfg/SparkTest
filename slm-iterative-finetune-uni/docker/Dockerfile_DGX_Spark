@@ -1,0 +1,231 @@
+# ============================================================================
+# Dockerfile für SLM Iteratives Fine-Tuning auf NVIDIA DGX Spark
+# Basiert auf: Unsloth Guide + DGX Spark Playbooks
+# ============================================================================
+
+# Base Image: NVIDIA CUDA + cuDNN
+FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+
+# Metadaten
+LABEL maintainer="university-ml-teaching"
+LABEL description="SLM Iterative Fine-Tuning with Unsloth on DGX Spark"
+
+# Environment Variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH="${CUDA_HOME}/bin:${PATH}"
+ENV LD_LIBRARY_PATH="${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}"
+
+# Spark Configuration
+ENV SPARK_VERSION=3.5.0
+ENV HADOOP_VERSION=3
+ENV SPARK_HOME=/opt/spark
+ENV PATH="${SPARK_HOME}/bin:${SPARK_HOME}/sbin:${PATH}"
+ENV PYSPARK_PYTHON=/usr/bin/python3
+ENV PYSPARK_DRIVER_PYTHON=/usr/bin/python3
+
+# ============================================================================
+# System-Pakete installieren
+# ============================================================================
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Build essentials
+    build-essential \
+    cmake \
+    git \
+    wget \
+    curl \
+    ca-certificates \
+    # Python
+    python3.10 \
+    python3.10-dev \
+    python3-pip \
+    # Java für Spark
+    openjdk-11-jdk \
+    # Utilities
+    vim \
+    htop \
+    tmux \
+    screen \
+    # Networking
+    net-tools \
+    iputils-ping \
+    # Clean up
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python as default
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 && \
+    update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
+
+# ============================================================================
+# Apache Spark installieren
+# ============================================================================
+
+RUN cd /tmp && \
+    wget -q https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz && \
+    tar -xzf spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz && \
+    mv spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION} ${SPARK_HOME} && \
+    rm spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz
+
+# Spark Konfiguration für DGX
+COPY spark-defaults.conf ${SPARK_HOME}/conf/spark-defaults.conf || \
+    echo "# Default Spark Config" > ${SPARK_HOME}/conf/spark-defaults.conf
+
+# ============================================================================
+# Python-Dependencies installieren
+# ============================================================================
+
+# Upgrade pip
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# PyTorch mit CUDA 12.1
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# Unsloth installieren (inkl. Flash Attention 2)
+RUN pip install --no-cache-dir "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+
+# Transformers & PEFT
+RUN pip install --no-cache-dir \
+    transformers>=4.36.0 \
+    datasets>=2.15.0 \
+    accelerate>=0.25.0 \
+    peft>=0.7.0 \
+    bitsandbytes>=0.41.3
+
+# PySpark & Distributed Computing
+RUN pip install --no-cache-dir \
+    pyspark==${SPARK_VERSION} \
+    findspark>=2.0.1
+
+# Code Evaluation
+RUN pip install --no-cache-dir \
+    human-eval>=1.0.3
+
+# Data Processing
+RUN pip install --no-cache-dir \
+    pandas>=2.1.0 \
+    numpy>=1.24.0 \
+    jsonlines>=4.0.0 \
+    pyyaml>=6.0.1
+
+# Visualization
+RUN pip install --no-cache-dir \
+    matplotlib>=3.8.0 \
+    seaborn>=0.13.0 \
+    plotly>=5.18.0 \
+    kaleido>=0.2.1
+
+# Jupyter
+RUN pip install --no-cache-dir \
+    jupyter>=1.0.0 \
+    notebook>=7.0.0 \
+    ipywidgets>=8.1.0 \
+    nbconvert>=7.12.0
+
+# Metrics
+RUN pip install --no-cache-dir \
+    scikit-learn>=1.3.0 \
+    rouge-score>=0.1.2 \
+    nltk>=3.8.1
+
+# Logging & Monitoring
+RUN pip install --no-cache-dir \
+    tensorboard>=2.15.0 \
+    wandb>=0.16.0 \
+    tqdm>=4.66.0
+
+# GPU Monitoring
+RUN pip install --no-cache-dir \
+    nvidia-ml-py>=12.535.133 \
+    gpustat>=1.1.1
+
+# ============================================================================
+# NVIDIA Optimierungen (optional, für DGX Spark Rapids)
+# ============================================================================
+
+# Uncomment für RAPIDS-Beschleunigung:
+# RUN pip install --no-cache-dir \
+#     cudf-cu12 \
+#     cuml-cu12 \
+#     cugraph-cu12
+
+# ============================================================================
+# Workspace Setup
+# ============================================================================
+
+WORKDIR /workspace
+
+# Python-Module im PYTHONPATH
+ENV PYTHONPATH="/workspace:/workspace/src:${PYTHONPATH}"
+
+# Jupyter Konfiguration
+RUN jupyter notebook --generate-config && \
+    echo "c.NotebookApp.token = ''" >> ~/.jupyter/jupyter_notebook_config.py && \
+    echo "c.NotebookApp.password = ''" >> ~/.jupyter/jupyter_notebook_config.py && \
+    echo "c.NotebookApp.allow_root = True" >> ~/.jupyter/jupyter_notebook_config.py
+
+# ============================================================================
+# NLTK-Daten herunterladen (für Evaluation)
+# ============================================================================
+
+RUN python -c "import nltk; nltk.download('punkt')"
+
+# ============================================================================
+# Entry Point
+# ============================================================================
+
+# Script für Initialization
+COPY entrypoint.sh /entrypoint.sh || \
+    echo '#!/bin/bash\nexec "$@"' > /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/bin/bash"]
+
+# ============================================================================
+# Ports
+# ============================================================================
+
+# Jupyter Notebook
+EXPOSE 8888
+
+# TensorBoard
+EXPOSE 6006
+
+# Spark UI
+EXPOSE 4040 4041
+
+# Spark Master/Worker
+EXPOSE 7077 7078 8080 8081
+
+# ============================================================================
+# Healthcheck
+# ============================================================================
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD nvidia-smi || exit 1
+
+# ============================================================================
+# Hinweise für Lehrende
+# ============================================================================
+
+# Build:
+#   docker build -f Dockerfile_DGX_Spark -t slm-finetune-uni .
+#
+# Run (Single GPU):
+#   docker run --gpus all -v $(pwd)/..:/workspace -p 8888:8888 slm-finetune-uni
+#
+# Run (Multi GPU):
+#   docker run --gpus all -v $(pwd)/..:/workspace \
+#     -e CUDA_VISIBLE_DEVICES=0,1,2,3 \
+#     -p 8888:8888 -p 6006:6006 \
+#     slm-finetune-uni
+#
+# Jupyter starten:
+#   docker run --gpus all -v $(pwd)/..:/workspace -p 8888:8888 \
+#     slm-finetune-uni jupyter notebook --ip=0.0.0.0 --port=8888
+#
+# DGX Spark Cluster:
+#   Siehe docker-compose.yml für Orchestrierung

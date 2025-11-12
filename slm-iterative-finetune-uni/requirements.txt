@@ -1,0 +1,60 @@
+# Core ML/DL Libraries
+torch>=2.1.0
+transformers>=4.36.0
+datasets>=2.15.0
+accelerate>=0.25.0
+peft>=0.7.0
+bitsandbytes>=0.41.3
+
+# Unsloth for fast fine-tuning
+unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git
+
+# PySpark for distributed evaluation
+pyspark>=3.5.0
+findspark>=2.0.1
+
+# Code execution and evaluation
+human-eval>=1.0.3
+execute>=1.0.0
+
+# Data processing
+pandas>=2.1.0
+numpy>=1.24.0
+jsonlines>=4.0.0
+pyyaml>=6.0.1
+
+# Visualization
+matplotlib>=3.8.0
+seaborn>=0.13.0
+plotly>=5.18.0
+kaleido>=0.2.1  # for static image export
+
+# Jupyter and notebooks
+jupyter>=1.0.0
+notebook>=7.0.0
+ipywidgets>=8.1.0
+nbconvert>=7.12.0
+
+# Evaluation metrics
+scikit-learn>=1.3.0
+rouge-score>=0.1.2
+nltk>=3.8.1
+
+# Logging and monitoring
+tensorboard>=2.15.0
+wandb>=0.16.0
+tqdm>=4.66.0
+
+# Code quality and security
+black>=23.12.0
+isort>=5.13.0
+bandit>=1.7.5  # for secure code execution checks
+
+# Optional: GPU monitoring
+nvidia-ml-py>=12.535.133
+gpustat>=1.1.1
+
+# Development tools
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pre-commit>=3.5.0

@@ -1,0 +1,160 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Spark Master Node
+  # ============================================================================
+  spark-master:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile_DGX_Spark
+    image: slm-finetune-uni:latest
+    container_name: slm-spark-master
+    hostname: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+    ports:
+      - "8080:8080"  # Spark Master UI
+      - "7077:7077"  # Spark Master
+      - "8888:8888"  # Jupyter
+      - "6006:6006"  # TensorBoard
+    volumes:
+      - ..:/workspace
+      - spark-checkpoints:/workspace/checkpoints
+      - spark-logs:/workspace/logs
+    command: >
+      bash -c "
+      /opt/spark/sbin/start-master.sh &&
+      tail -f /opt/spark/logs/*.out
+      "
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # ============================================================================
+  # Spark Worker Node 1
+  # ============================================================================
+  spark-worker-1:
+    image: slm-finetune-uni:latest
+    container_name: slm-spark-worker-1
+    hostname: spark-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=8
+      - SPARK_WORKER_MEMORY=32g
+      - CUDA_VISIBLE_DEVICES=0,1
+    ports:
+      - "8081:8081"  # Worker UI
+    volumes:
+      - ..:/workspace
+      - spark-checkpoints:/workspace/checkpoints
+    depends_on:
+      - spark-master
+    command: >
+      bash -c "
+      /opt/spark/sbin/start-worker.sh spark://spark-master:7077 &&
+      tail -f /opt/spark/logs/*.out
+      "
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0', '1']
+              capabilities: [gpu]
+
+  # ============================================================================
+  # Spark Worker Node 2 (optional)
+  # ============================================================================
+  spark-worker-2:
+    image: slm-finetune-uni:latest
+    container_name: slm-spark-worker-2
+    hostname: spark-worker-2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=8
+      - SPARK_WORKER_MEMORY=32g
+      - CUDA_VISIBLE_DEVICES=2,3
+    ports:
+      - "8082:8081"  # Worker UI
+    volumes:
+      - ..:/workspace
+      - spark-checkpoints:/workspace/checkpoints
+    depends_on:
+      - spark-master
+    command: >
+      bash -c "
+      /opt/spark/sbin/start-worker.sh spark://spark-master:7077 &&
+      tail -f /opt/spark/logs/*.out
+      "
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['2', '3']
+              capabilities: [gpu]
+
+  # ============================================================================
+  # Jupyter Notebook Server (optional standalone)
+  # ============================================================================
+  jupyter:
+    image: slm-finetune-uni:latest
+    container_name: slm-jupyter
+    ports:
+      - "8889:8888"
+    volumes:
+      - ..:/workspace
+    working_dir: /workspace
+    command: jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  spark-checkpoints:
+  spark-logs:
+
+# ============================================================================
+# Nutzungshinweise
+# ============================================================================
+
+# Start alle Services:
+#   docker-compose up -d
+#
+# Nur Master + Worker 1:
+#   docker-compose up -d spark-master spark-worker-1
+#
+# Logs anschauen:
+#   docker-compose logs -f spark-master
+#
+# In Container einloggen:
+#   docker exec -it slm-spark-master bash
+#
+# Services stoppen:
+#   docker-compose down
+#
+# Mit Volume-Cleanup:
+#   docker-compose down -v
+#
+# Spark UI öffnen:
+#   http://localhost:8080 (Master)
+#   http://localhost:8081 (Worker 1)
+#   http://localhost:8082 (Worker 2)
+#
+# Jupyter öffnen:
+#   http://localhost:8888 (vom Master)
+#   http://localhost:8889 (standalone)

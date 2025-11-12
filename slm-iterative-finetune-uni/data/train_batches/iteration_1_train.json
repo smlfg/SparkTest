@@ -1,0 +1,52 @@
+[
+  {
+    "instruction": "Write a Python function that adds two numbers.",
+    "prompt": "def add(a, b):\n    \"\"\"Return the sum of two numbers.\"\"\"\n",
+    "canonical_solution": "    return a + b\n"
+  },
+  {
+    "instruction": "Write a Python function that multiplies two numbers.",
+    "prompt": "def multiply(a, b):\n    \"\"\"Return the product of two numbers.\"\"\"\n",
+    "canonical_solution": "    return a * b\n"
+  },
+  {
+    "instruction": "Write a Python function that checks if a number is even.",
+    "prompt": "def is_even(n):\n    \"\"\"Check if a number is even.\"\"\"\n",
+    "canonical_solution": "    return n % 2 == 0\n"
+  },
+  {
+    "instruction": "Write a Python function that returns the maximum of two numbers.",
+    "prompt": "def max_of_two(a, b):\n    \"\"\"Return the maximum of two numbers.\"\"\"\n",
+    "canonical_solution": "    if a > b:\n        return a\n    else:\n        return b\n"
+  },
+  {
+    "instruction": "Write a Python function that concatenates two strings.",
+    "prompt": "def concat_strings(s1, s2):\n    \"\"\"Concatenate two strings.\"\"\"\n",
+    "canonical_solution": "    return s1 + s2\n"
+  },
+  {
+    "instruction": "Write a Python function that counts elements in a list.",
+    "prompt": "def count_elements(lst):\n    \"\"\"Return the number of elements in a list.\"\"\"\n",
+    "canonical_solution": "    return len(lst)\n"
+  },
+  {
+    "instruction": "Write a Python function that reverses a string.",
+    "prompt": "def reverse_string(s):\n    \"\"\"Reverse a string.\"\"\"\n",
+    "canonical_solution": "    return s[::-1]\n"
+  },
+  {
+    "instruction": "Write a Python function that checks if a string is empty.",
+    "prompt": "def is_empty_string(s):\n    \"\"\"Check if a string is empty.\"\"\"\n",
+    "canonical_solution": "    return len(s) == 0\n"
+  },
+  {
+    "instruction": "Write a Python function that calculates the square of a number.",
+    "prompt": "def square(n):\n    \"\"\"Calculate the square of a number.\"\"\"\n",
+    "canonical_solution": "    return n * n\n"
+  },
+  {
+    "instruction": "Write a Python function that returns the first element of a list.",
+    "prompt": "def first_element(lst):\n    \"\"\"Return the first element of a list.\"\"\"\n",
+    "canonical_solution": "    if len(lst) > 0:\n        return lst[0]\n    return None\n"
+  }
+]

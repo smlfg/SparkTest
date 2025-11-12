@@ -1,0 +1,85 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Model Checkpoints & Logs
+checkpoints/
+logs/
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# Evaluation Results
+data/eval_logs/*.json
+!data/eval_logs/.gitkeep
+
+# Reports
+reports/*.md
+reports/*.png
+reports/*.html
+reports/*.pdf
+!reports/.gitkeep
+
+# TensorBoard
+runs/
+*.tfevents.*
+
+# Weights & Biases
+wandb/
+
+# Mac
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Large data files
+*.tar.gz
+*.zip
+*.h5
+
+# Spark
+metastore_db/
+derby.log
+spark-warehouse/
+
+# Docker
+.dockerignore
