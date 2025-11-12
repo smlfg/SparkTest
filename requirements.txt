@@ -1,0 +1,152 @@
+# Agent 9: Application Layer Dependencies
+
+# Core async and HTTP
+aiohttp==3.9.1
+asyncio-atexit==1.0.1
+
+# Web frameworks
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Data processing
+numpy==1.26.3
+pandas==2.2.0
+
+# Machine learning and embeddings
+scikit-learn==1.4.0
+
+# Natural language processing
+spacy==3.7.2
+
+# Graph processing (for txt2kg)
+networkx==3.2.1
+
+# Video processing (for VSS)
+opencv-python==4.9.0.80
+pillow==10.2.0
+
+# Image processing (for ComfyUI)
+imageio==2.33.1
+
+# Data validation and serialization
+marshmallow==3.20.2
+jsonschema==4.20.0
+
+# Logging and monitoring
+python-json-logger==2.0.7
+prometheus-client==0.19.0
+
+# Configuration management
+python-dotenv==1.0.0
+pyyaml==6.0.1
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+httpx==0.26.0  # For testing async HTTP clients
+
+# Development tools
+black==24.1.1
+flake8==7.0.0
+mypy==1.8.0
+isort==5.13.2
+
+# Documentation
+mkdocs==1.5.3
+mkdocs-material==9.5.4
+
+# Database (optional, for persistence)
+sqlalchemy==2.0.25
+alembic==1.13.1
+aiosqlite==0.19.0
+
+# Caching
+redis==5.0.1
+hiredis==2.3.2
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2024.1
+humanize==4.9.0
+tqdm==4.66.1
+
+# Security
+cryptography==42.0.0
+python-jose==3.3.0
+
+# API documentation
+swagger-ui-bundle==0.0.9
+
+# Distributed computing (Spark integration)
+pyspark==3.5.0
+
+# Message queuing (optional, for async processing)
+celery==5.3.6
+kombu==5.3.5
+
+# Monitoring and tracing
+opentelemetry-api==1.22.0
+opentelemetry-sdk==1.22.0
+opentelemetry-instrumentation-fastapi==0.43b0
+
+# Rate limiting
+slowapi==0.1.9
+
+# CORS
+python-multipart==0.0.6
+
+# Type hints
+typing-extensions==4.9.0
+
+# JSON processing
+orjson==3.9.12
+
+# HTTP client with retry
+tenacity==8.2.3
+
+# Environment and system
+psutil==5.9.8
+
+# Date and time
+arrow==1.3.0
+
+# CLI (for management commands)
+click==8.1.7
+rich==13.7.0
+
+# Background tasks
+apscheduler==3.10.4
+
+# Graph visualization export
+matplotlib==3.8.2
+graphviz==0.20.1
+
+# Knowledge graph formats
+rdflib==7.0.0
+
+# Text processing
+beautifulsoup4==4.12.3
+lxml==5.1.0
+markdown==3.5.2
+
+# Compression
+zstandard==0.22.0
+
+# UUID generation
+shortuuid==1.0.11
+
+# URL handling
+yarl==1.9.4
+
+# Regex
+regex==2023.12.25
+
+# Collections utilities
+more-itertools==10.2.0
+
+# Functional programming
+toolz==0.12.1
