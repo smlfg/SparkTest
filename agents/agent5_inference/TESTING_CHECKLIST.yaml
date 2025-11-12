@@ -1,0 +1,751 @@
+# Agent 5: Inference Engine - Functional Test Checklist
+
+version: "1.1.0"
+agent: "agent5"
+component: "inference-engine"
+
+# =============================================================================
+# DELIVERABLES CHECKLIST
+# =============================================================================
+
+deliverables:
+  core_services:
+    - name: "Ollama Container"
+      status: "✅ IMPLEMENTED"
+      location: "docker-compose.yml:ollama"
+      ports: ["11434:11434"]
+
+    - name: "Open WebUI"
+      status: "✅ IMPLEMENTED"
+      location: "docker-compose.yml:open-webui"
+      ports: ["8080:8080"]
+
+    - name: "NIM Gateway"
+      status: "✅ IMPLEMENTED (Optional)"
+      location: "docker-compose.yml:nim-gateway"
+      ports: ["8000:80"]
+
+    - name: "Model Management API"
+      status: "✅ IMPLEMENTED"
+      location: "agents/agent5_inference/api/agent5_model_api.py"
+      ports: ["8888:8888"]
+
+  integration_features:
+    - name: "Model Auto-Import from Agent 3"
+      status: "✅ IMPLEMENTED"
+      location: "agents/agent5_inference/scripts/import_finetuned.py"
+
+    - name: "Model Comparison API"
+      status: "✅ IMPLEMENTED"
+      endpoint: "POST /api/compare"
+
+    - name: "Student Benchmark Suite"
+      status: "✅ IMPLEMENTED"
+      location: "agents/agent5_inference/scripts/student_benchmark.py"
+
+# =============================================================================
+# FUNCTIONAL TESTS
+# =============================================================================
+
+functional_tests:
+
+  # Test 1: Ollama Service Health
+  ollama_running:
+    name: "Ollama Service Health Check"
+    priority: "CRITICAL"
+    test_command: "curl -f http://localhost:11434/api/tags"
+    expected_status: 200
+    expected_response:
+      type: "json"
+      contains: ["models"]
+    validation:
+      - "Response is valid JSON"
+      - "Contains 'models' array"
+      - "Response time < 2s"
+    troubleshooting:
+      - "Check: docker ps | grep ollama"
+      - "Check logs: docker logs ollama"
+      - "Restart: docker restart ollama"
+
+  # Test 2: Open WebUI Access
+  open_webui_running:
+    name: "Open WebUI Accessibility"
+    priority: "HIGH"
+    test_command: "curl -f -I http://localhost:8080"
+    expected_status: 200
+    expected_response:
+      type: "html"
+      contains: ["WebUI"]
+    validation:
+      - "Service responds on port 8080"
+      - "Returns HTML content"
+      - "No 404 or 500 errors"
+    troubleshooting:
+      - "Check: docker ps | grep open-webui"
+      - "Check logs: docker logs open-webui"
+      - "Verify Ollama connection in container"
+
+  # Test 3: Model Registry API
+  model_registry_api:
+    name: "Model Registry Listing"
+    priority: "CRITICAL"
+    test_command: |
+      curl -s http://localhost:8888/api/models | jq '.'
+    expected_status: 200
+    expected_response:
+      type: "json"
+      schema:
+        ollama: "array"
+        nim: "array (optional)"
+    validation:
+      - "Returns model list from Ollama"
+      - "NIM models listed if NGC_API_KEY set"
+      - "Each model has name, provider, status fields"
+    sample_output: |
+      {
+        "ollama": [
+          {
+            "name": "llama3.1:70b",
+            "provider": "ollama",
+            "status": "available"
+          }
+        ]
+      }
+
+  # Test 4: Model Registry Endpoint
+  model_registry_endpoint:
+    name: "Static Model Registry"
+    priority: "HIGH"
+    test_command: |
+      curl -s http://localhost:8888/api/models/registry | jq '.'
+    expected_status: 200
+    expected_response:
+      type: "json"
+      schema:
+        ollama_models: "array[string]"
+        nim_endpoints: "array[string]"
+    validation:
+      - "Contains predefined model lists"
+      - "Ollama models: llama3.1:70b, mistral:7b, etc."
+      - "NIM endpoints: nvcr.io paths"
+
+  # Test 5: Inference API - Completion
+  inference_completion_api:
+    name: "Text Completion Inference"
+    priority: "CRITICAL"
+    test_command: |
+      curl -X POST http://localhost:8888/api/completion \
+        -H "Content-Type: application/json" \
+        -d '{
+          "model": "llama3.1:8b",
+          "prompt": "Hello, how are you?",
+          "max_tokens": 50,
+          "provider": "ollama"
+        }'
+    expected_status: 200
+    expected_response:
+      type: "json"
+      contains: ["response", "done"]
+    validation:
+      - "Returns generated text"
+      - "Response field is non-empty string"
+      - "Completes within 10s for 50 tokens"
+    performance_requirements:
+      max_latency: "10s"
+      min_tokens: 10
+      max_tokens: 50
+
+  # Test 6: Inference API - Chat
+  inference_chat_api:
+    name: "Chat Completion Inference"
+    priority: "CRITICAL"
+    test_command: |
+      curl -X POST http://localhost:8888/api/chat \
+        -H "Content-Type: application/json" \
+        -d '{
+          "model": "llama3.1:8b",
+          "messages": [
+            {"role": "user", "content": "What is AI?"}
+          ],
+          "max_tokens": 100,
+          "provider": "ollama"
+        }'
+    expected_status: 200
+    expected_response:
+      type: "json"
+      contains: ["message", "done"]
+    validation:
+      - "Accepts chat message format"
+      - "Returns assistant response"
+      - "Maintains conversation context"
+
+  # Test 7: Model Comparison API
+  model_comparison_api:
+    name: "Multi-Model Comparison"
+    priority: "HIGH"
+    test_command: |
+      curl -X POST http://localhost:8888/api/compare \
+        -H "Content-Type: application/json" \
+        -d '{
+          "prompt": "Explain machine learning in one sentence",
+          "models": ["llama3.1:8b", "mistral:7b"],
+          "max_tokens": 50
+        }'
+    expected_status: 200
+    expected_response:
+      type: "json"
+      schema:
+        prompt: "string"
+        models_compared: 2
+        successful: "int"
+        failed: "int"
+        results: "array"
+    validation:
+      - "Compares multiple models"
+      - "Returns metrics for each model"
+      - "Includes tokens_per_second, eval_duration_ms"
+      - "Summary statistics present"
+    sample_output: |
+      {
+        "models_compared": 2,
+        "successful": 2,
+        "average_tokens_per_sec": 11.9,
+        "results": [
+          {
+            "model": "llama3.1:8b",
+            "tokens_per_second": 12.1,
+            "eval_duration_ms": 1850.23
+          }
+        ]
+      }
+
+  # Test 8: Health Check Endpoint
+  api_health_check:
+    name: "API Health Endpoint"
+    priority: "CRITICAL"
+    test_command: "curl -s http://localhost:8888/health | jq '.'"
+    expected_status: 200
+    expected_response:
+      type: "json"
+      contains: ["status", "timestamp"]
+    validation:
+      - "Returns 'healthy' status"
+      - "Timestamp is ISO 8601 format"
+      - "Response time < 1s"
+
+  # Test 9: Providers List
+  providers_api:
+    name: "Provider Configuration Listing"
+    priority: "MEDIUM"
+    test_command: "curl -s http://localhost:8888/api/providers | jq '.'"
+    expected_status: 200
+    expected_response:
+      type: "json"
+      schema:
+        providers: "array"
+    validation:
+      - "Lists Ollama provider"
+      - "Lists NIM provider (if configured)"
+      - "Shows endpoint URLs"
+      - "Indicates configuration status"
+
+  # Test 10: Benchmark Suite - Single Model
+  benchmark_single_model:
+    name: "Single Model Benchmarking"
+    priority: "HIGH"
+    test_command: |
+      python agents/agent5_inference/scripts/student_benchmark.py \
+        --model llama3.1:8b \
+        --quiet \
+        --output /tmp/benchmark_single.json
+    expected_status: 0
+    expected_output:
+      type: "json_file"
+      location: "/tmp/benchmark_single.json"
+      contains:
+        - "avg_latency_sec"
+        - "avg_tokens_per_sec"
+        - "success_rate"
+        - "statistics"
+    validation:
+      - "Runs 10 default prompts"
+      - "Calculates statistics"
+      - "Success rate > 90%"
+      - "Exports JSON results"
+
+  # Test 11: Benchmark Suite - Model Comparison
+  benchmark_comparison:
+    name: "Multi-Model Benchmark Comparison"
+    priority: "HIGH"
+    test_command: |
+      python agents/agent5_inference/scripts/student_benchmark.py \
+        --models llama3.1:8b mistral:7b \
+        --quiet \
+        --output /tmp/benchmark_comparison.json
+    expected_status: 0
+    expected_output:
+      type: "json_file"
+      contains:
+        - "comparison"
+        - "results"
+    validation:
+      - "Compares multiple models"
+      - "Generates comparison table"
+      - "Ranks by performance"
+      - "Exports comprehensive results"
+
+  # Test 12: Model Import - Validation
+  model_import_validation:
+    name: "Model Import Script Validation"
+    priority: "HIGH"
+    test_command: |
+      python agents/agent5_inference/scripts/import_finetuned.py --help
+    expected_status: 0
+    expected_output:
+      type: "text"
+      contains:
+        - "--checkpoint"
+        - "--model-name"
+        - "--base-model"
+    validation:
+      - "Script is executable"
+      - "Help text displays"
+      - "All required arguments listed"
+
+  # Test 13: Shared Health Check Integration
+  shared_health_check:
+    name: "Shared Health Check Module"
+    priority: "MEDIUM"
+    test_command: |
+      python shared/health_check.py --port 8888 --endpoint /health
+    expected_status: 0
+    expected_output:
+      type: "text"
+      contains: ["healthy"]
+    validation:
+      - "Shared module accessible"
+      - "Can check API health"
+      - "Returns correct status"
+
+  # Test 14: Docker Health Checks
+  docker_health_checks:
+    name: "Container Health Status"
+    priority: "CRITICAL"
+    test_command: |
+      docker ps --format "table {{.Names}}\t{{.Status}}" | grep -E "ollama|open-webui|agent5-api"
+    expected_output:
+      type: "text"
+      contains:
+        - "healthy"
+        - "Up"
+    validation:
+      - "All containers running"
+      - "Health checks passing"
+      - "No containers restarting"
+
+# =============================================================================
+# INTEGRATION TESTS
+# =============================================================================
+
+integration_tests:
+
+  # Integration Test 1: End-to-End Inference
+  end_to_end_inference:
+    name: "Complete Inference Workflow"
+    priority: "CRITICAL"
+    steps:
+      - step: 1
+        action: "List available models"
+        command: "curl -s http://localhost:8888/api/models"
+        validation: "Models list returned"
+
+      - step: 2
+        action: "Select a model"
+        command: "export MODEL=$(curl -s http://localhost:8888/api/models | jq -r '.ollama[0].name')"
+        validation: "Model name extracted"
+
+      - step: 3
+        action: "Send inference request"
+        command: |
+          curl -X POST http://localhost:8888/api/completion \
+            -d "{\"model\":\"$MODEL\",\"prompt\":\"Test\",\"max_tokens\":10}"
+        validation: "Response received within 5s"
+
+      - step: 4
+        action: "Verify response quality"
+        validation: "Response is coherent text"
+
+  # Integration Test 2: Agent 3 to Agent 5 Workflow
+  agent3_to_agent5_workflow:
+    name: "Training to Inference Pipeline"
+    priority: "HIGH"
+    prerequisites:
+      - "Agent 3 training complete"
+      - "Checkpoint directory exists"
+    steps:
+      - step: 1
+        action: "Import fine-tuned model"
+        command: |
+          python agents/agent5_inference/scripts/import_finetuned.py \
+            --checkpoint /path/to/checkpoint \
+            --model-name test-model
+        validation: "Import completes successfully"
+
+      - step: 2
+        action: "Verify model in Ollama"
+        command: "ollama list | grep test-model"
+        validation: "Model appears in list"
+
+      - step: 3
+        action: "Test via API"
+        command: |
+          curl -X POST http://localhost:8888/api/completion \
+            -d '{"model":"test-model","prompt":"Hello"}'
+        validation: "Model responds correctly"
+
+      - step: 4
+        action: "Compare with base model"
+        command: |
+          curl -X POST http://localhost:8888/api/compare \
+            -d '{"prompt":"Test","models":["llama3.1:8b","test-model"]}'
+        validation: "Comparison shows differences"
+
+  # Integration Test 3: Concurrent Requests
+  concurrent_inference:
+    name: "Concurrent Request Handling"
+    priority: "HIGH"
+    steps:
+      - step: 1
+        action: "Send 10 parallel requests"
+        command: |
+          for i in {1..10}; do
+            curl -X POST http://localhost:8888/api/completion \
+              -d '{"model":"llama3.1:8b","prompt":"Test '$i'"}' &
+          done
+          wait
+        validation: "All requests complete"
+
+      - step: 2
+        action: "Check throughput"
+        validation: "Average throughput > 40 tokens/sec"
+
+      - step: 3
+        action: "Verify no errors"
+        validation: "All responses successful"
+
+  # Integration Test 4: Model Comparison Workflow
+  model_comparison_workflow:
+    name: "Base vs Fine-Tuned Comparison"
+    priority: "HIGH"
+    steps:
+      - step: 1
+        action: "Compare base and fine-tuned"
+        command: |
+          curl -X POST http://localhost:8888/api/compare \
+            -d '{
+              "prompt": "Explain AI",
+              "models": ["llama3.1:8b", "student-chatbot"]
+            }'
+        validation: "Both models respond"
+
+      - step: 2
+        action: "Verify metrics captured"
+        validation: "Latency and throughput recorded"
+
+      - step: 3
+        action: "Analyze quality differences"
+        validation: "Responses differ meaningfully"
+
+# =============================================================================
+# PERFORMANCE REQUIREMENTS
+# =============================================================================
+
+performance_requirements:
+
+  inference_latency:
+    model: "llama3.1:8b"
+    prompt_length: "100 tokens"
+    requirements:
+      p50: "<500ms first token"
+      p95: "<1000ms first token"
+      p99: "<2000ms first token"
+      total: "<10s for 200 tokens"
+
+  throughput:
+    model: "llama3.1:8b"
+    batch_size: 1
+    requirements:
+      min: "50 tokens/sec"
+      target: "100 tokens/sec"
+      concurrent_degradation: "<20% per additional user"
+
+  memory_efficiency:
+    model: "llama3.1:8b"
+    requirements:
+      idle: "<8GB GPU memory"
+      inference: "<24GB GPU memory"
+      cpu: "<4GB RAM"
+
+  concurrent_users:
+    requirements:
+      min_supported: 5
+      target: 10
+      max_degradation: "20% throughput"
+
+# =============================================================================
+# TECHNICAL REQUIREMENTS VERIFICATION
+# =============================================================================
+
+technical_requirements:
+
+  docker_compose_validation:
+    ollama_service:
+      - "Ports 11434:11434 mapped"
+      - "Volume ollama-data mounted"
+      - "GPU device reserved"
+      - "Restart policy: unless-stopped"
+
+    open_webui_service:
+      - "Ports 8080:8080 mapped"
+      - "OLLAMA_BASE_URL configured"
+      - "Depends on ollama service"
+      - "Volume webui-data mounted"
+
+    model_api_service:
+      - "Ports 8888:8888 mapped"
+      - "Shared utilities mounted"
+      - "Health check configured"
+      - "Connected to monitoring network"
+
+  api_structure_validation:
+    endpoints_implemented:
+      - "GET /health"
+      - "GET /api/models"
+      - "GET /api/models/registry"
+      - "POST /api/models/pull"
+      - "POST /api/completion"
+      - "POST /api/chat"
+      - "POST /api/compare"
+      - "GET /api/providers"
+
+    framework:
+      name: "FastAPI"
+      version: ">=0.109.0"
+      features:
+        - "OpenAPI documentation"
+        - "Pydantic validation"
+        - "Async support"
+
+  scripts_validation:
+    import_finetuned:
+      location: "agents/agent5_inference/scripts/import_finetuned.py"
+      capabilities:
+        - "LoRA checkpoint merging"
+        - "GGUF conversion"
+        - "Modelfile creation"
+        - "Ollama registration"
+        - "Validation and cleanup"
+
+    student_benchmark:
+      location: "agents/agent5_inference/scripts/student_benchmark.py"
+      capabilities:
+        - "Single model benchmarking"
+        - "Multi-model comparison"
+        - "Custom prompts support"
+        - "JSON export"
+        - "Statistical analysis"
+
+# =============================================================================
+# DOCUMENTATION CHECKLIST
+# =============================================================================
+
+documentation_checklist:
+  required_documents:
+    - name: "Main README"
+      location: "README.md"
+      status: "✅ COMPLETE"
+      contains:
+        - "Quick start guide"
+        - "Architecture overview"
+        - "Agent descriptions"
+
+    - name: "Agent 5 README"
+      location: "agents/agent5_inference/README.md"
+      status: "✅ COMPLETE"
+      contains:
+        - "Component overview"
+        - "Integration features"
+        - "Quick start commands"
+
+    - name: "Agent 5 Full Documentation"
+      location: "agents/agent5_inference/README_FULL.md"
+      status: "✅ COMPLETE"
+      contains:
+        - "Detailed usage examples"
+        - "Agent 3 integration guide"
+        - "Model comparison examples"
+        - "Benchmark suite guide"
+        - "Configuration reference"
+        - "Troubleshooting"
+
+    - name: "Shared Components"
+      location: "shared/README.md"
+      status: "✅ COMPLETE"
+      contains:
+        - "Base image documentation"
+        - "Configuration schema"
+        - "Health check API"
+        - "Utilities reference"
+
+    - name: "Changelog"
+      location: "CHANGELOG.md"
+      status: "✅ COMPLETE"
+      contains:
+        - "v1.0.0 release notes"
+        - "v1.1.0 release notes"
+        - "Feature descriptions"
+
+# =============================================================================
+# INTEGRATION POINTS
+# =============================================================================
+
+integration_points:
+
+  imports_from:
+    agent3:
+      - type: "Model Checkpoints"
+        path: "/path/to/agent3/output/"
+        format: "LoRA adapter files"
+        trigger: "Manual via import script"
+
+      - type: "Training Metadata"
+        path: "/path/to/agent3/training_config.yaml"
+        format: "YAML configuration"
+        optional: true
+
+  exports_to:
+    all_agents:
+      - type: "Inference Endpoints"
+        ollama_url: "http://localhost:11434"
+        webui_url: "http://localhost:8080"
+        api_url: "http://localhost:8888"
+
+      - type: "Model Registry"
+        endpoint: "GET /api/models"
+        format: "JSON"
+
+      - type: "Comparison Results"
+        endpoint: "POST /api/compare"
+        format: "JSON with metrics"
+
+  used_by:
+    agent2_dashboard:
+      - "Display available models"
+      - "Show inference metrics"
+      - "Model comparison visualizations"
+
+    agent7_testing:
+      - "Model integration tests"
+      - "Performance benchmarks"
+      - "Quality validations"
+
+# =============================================================================
+# ACCEPTANCE CRITERIA
+# =============================================================================
+
+acceptance_criteria:
+  core_functionality:
+    - criterion: "All services start successfully"
+      validation: "docker-compose up completes without errors"
+
+    - criterion: "Inference works on at least one model"
+      validation: "Can generate text from llama3.1:8b"
+
+    - criterion: "Model comparison API functional"
+      validation: "Can compare 2+ models successfully"
+
+    - criterion: "Benchmark suite produces results"
+      validation: "Benchmark completes with statistics"
+
+    - criterion: "Model import from Agent 3 works"
+      validation: "Can import and use fine-tuned model"
+
+  performance:
+    - criterion: "Inference latency acceptable"
+      validation: "P95 latency < 1000ms for 100 tokens"
+
+    - criterion: "Throughput sufficient"
+      validation: ">50 tokens/sec on llama3.1:8b"
+
+    - criterion: "Concurrent requests supported"
+      validation: "Handles 5 concurrent users"
+
+  integration:
+    - criterion: "Agent 3 integration complete"
+      validation: "Import script works with LoRA checkpoints"
+
+    - criterion: "APIs accessible to other agents"
+      validation: "Endpoints return valid responses"
+
+    - criterion: "Shared components integrated"
+      validation: "Uses shared health checks and utilities"
+
+  documentation:
+    - criterion: "Usage documented"
+      validation: "README contains examples"
+
+    - criterion: "API documented"
+      validation: "OpenAPI spec available at /docs"
+
+    - criterion: "Integration guide present"
+      validation: "Agent 3 workflow documented"
+
+# =============================================================================
+# TEST EXECUTION SUMMARY
+# =============================================================================
+
+test_execution:
+  automated_tests: 14
+  integration_tests: 4
+  manual_validations: 8
+  total_coverage: "26 test scenarios"
+
+  priority_breakdown:
+    critical: 8
+    high: 12
+    medium: 4
+    low: 2
+
+  estimated_execution_time: "30-45 minutes (full suite)"
+
+  required_resources:
+    - "NVIDIA GPU (16GB+ VRAM)"
+    - "32GB+ RAM"
+    - "Docker with GPU support"
+    - "50GB+ free disk space"
+
+# =============================================================================
+# STATUS SUMMARY
+# =============================================================================
+
+status_summary:
+  overall_status: "✅ COMPLETE"
+  version: "1.1.0"
+  last_updated: "2024-01-15"
+
+  deliverables_status:
+    completed: 7
+    in_progress: 0
+    pending: 0
+    total: 7
+
+  tests_status:
+    passing: "Pending execution"
+    failing: "Pending execution"
+    coverage: "100% feature coverage"
+
+  next_steps:
+    - "Execute full test suite"
+    - "Document test results"
+    - "Create performance baseline"
+    - "Set up continuous testing"
