@@ -1,0 +1,56 @@
+# Dockerfile for TensorRT-LLM Inference Engine
+# Optimized for maximum performance with TensorRT
+
+FROM nvcr.io/nvidia/pytorch:23.12-py3
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    git-lfs \
+    wget \
+    curl \
+    vim \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install TensorRT-LLM
+# Note: Adjust version based on latest release
+RUN pip3 install tensorrt_llm==0.8.0 --extra-index-url https://pypi.nvidia.com
+
+# Install additional dependencies
+RUN pip3 install transformers==4.38.0
+RUN pip3 install accelerate==0.27.0
+RUN pip3 install sentencepiece==0.1.99
+RUN pip3 install protobuf==3.20.3
+RUN pip3 install fastapi==0.109.0
+RUN pip3 install uvicorn==0.27.0
+
+# Create application directory
+WORKDIR /app
+
+# Copy application code
+COPY playbooks/trt_llm_playbook.py /app/playbooks/
+COPY configs/ /app/configs/
+COPY agent4_inference_api.py /app/
+
+# Create directories for engines and models
+RUN mkdir -p /app/trt_engines /app/models /app/checkpoints
+
+# Expose TRT-LLM port
+EXPOSE 8001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+# Default command
+# Note: This assumes the engine is already built
+CMD ["python3", "-m", "tensorrt_llm.serve", \
+     "--engine_dir", "/app/trt_engines/model", \
+     "--tokenizer_dir", "/app/models", \
+     "--host", "0.0.0.0", \
+     "--port", "8001"]

@@ -1,0 +1,144 @@
+version: '3.8'
+
+services:
+  # vLLM Inference Service
+  vllm:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.vllm
+    container_name: agent4-vllm
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - CUDA_VISIBLE_DEVICES=0
+      - HF_HOME=/app/cache
+      - TRANSFORMERS_CACHE=/app/cache
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../../models:/app/models
+      - ../../cache:/app/cache
+      - ../../configs:/app/configs:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - inference-network
+
+  # TensorRT-LLM Inference Service
+  trt-llm:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.trt
+    container_name: agent4-trt-llm
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - CUDA_VISIBLE_DEVICES=0
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../../trt_engines:/app/trt_engines:ro
+      - ../../models:/app/models:ro
+      - ../../configs:/app/configs:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    restart: unless-stopped
+    networks:
+      - inference-network
+
+  # Speculative Decoding Service
+  speculative:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.vllm
+    container_name: agent4-speculative
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - CUDA_VISIBLE_DEVICES=0
+      - HF_HOME=/app/cache
+      - SPECULATIVE_MODE=true
+    ports:
+      - "8002:8002"
+    volumes:
+      - ../../models:/app/models
+      - ../../cache:/app/cache
+      - ../../configs:/app/configs:ro
+      - ../../playbooks:/app/playbooks:ro
+    command: ["python3", "/app/playbooks/speculative_decoding_playbook.py"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - inference-network
+
+  # Prometheus Monitoring (Optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: agent4-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+    networks:
+      - inference-network
+    profiles:
+      - monitoring
+
+  # Grafana Dashboard (Optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: agent4-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - inference-network
+    profiles:
+      - monitoring
+
+networks:
+  inference-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:

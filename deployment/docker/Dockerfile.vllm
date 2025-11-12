@@ -1,0 +1,67 @@
+# Dockerfile for vLLM Inference Engine
+# Optimized for PagedAttention and high-performance serving
+
+FROM nvidia/cuda:12.1.0-devel-ubuntu22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV CUDA_HOME=/usr/local/cuda
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    git \
+    wget \
+    curl \
+    vim \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN pip3 install --upgrade pip setuptools wheel
+
+# Install vLLM and dependencies
+RUN pip3 install vllm==0.4.0
+RUN pip3 install ray==2.9.0
+RUN pip3 install transformers==4.38.0
+RUN pip3 install accelerate==0.27.0
+RUN pip3 install fastapi==0.109.0
+RUN pip3 install uvicorn==0.27.0
+RUN pip3 install pydantic==2.5.0
+
+# Install monitoring and logging tools
+RUN pip3 install prometheus-client==0.19.0
+RUN pip3 install psutil==5.9.8
+
+# Create application directory
+WORKDIR /app
+
+# Copy application code
+COPY playbooks/vllm_playbook.py /app/playbooks/
+COPY configs/ /app/configs/
+COPY agent4_inference_api.py /app/
+
+# Create directories for models and cache
+RUN mkdir -p /app/models /app/cache
+
+# Set cache directory for HuggingFace
+ENV HF_HOME=/app/cache
+ENV TRANSFORMERS_CACHE=/app/cache
+
+# Expose vLLM port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Default command
+CMD ["python3", "-m", "vllm.entrypoints.openai.api_server", \
+     "--model", "meta-llama/Llama-2-7b-hf", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--gpu-memory-utilization", "0.9", \
+     "--block-size", "16", \
+     "--enable-prefix-caching"]

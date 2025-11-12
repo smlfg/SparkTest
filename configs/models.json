@@ -1,0 +1,117 @@
+{
+  "models": {
+    "llama-2-7b": {
+      "name": "meta-llama/Llama-2-7b-hf",
+      "size_gb": 13.0,
+      "parameters": "7B",
+      "architecture": "llama",
+      "context_length": 4096,
+      "supported_backends": ["vllm", "trt_llm", "speculative"],
+      "recommended_backend": "vllm",
+      "quantization_options": ["awq", "gptq"],
+      "hardware_requirements": {
+        "min_gpu_memory_gb": 16,
+        "recommended_gpu_memory_gb": 24,
+        "gpu_types": ["A100", "A10", "RTX 3090", "RTX 4090"]
+      }
+    },
+    "llama-2-13b": {
+      "name": "meta-llama/Llama-2-13b-hf",
+      "size_gb": 26.0,
+      "parameters": "13B",
+      "architecture": "llama",
+      "context_length": 4096,
+      "supported_backends": ["vllm", "trt_llm"],
+      "recommended_backend": "trt_llm",
+      "quantization_options": ["awq", "gptq", "int8"],
+      "hardware_requirements": {
+        "min_gpu_memory_gb": 32,
+        "recommended_gpu_memory_gb": 40,
+        "gpu_types": ["A100", "A100-80GB"]
+      }
+    },
+    "tinyllama-1.1b": {
+      "name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+      "size_gb": 2.2,
+      "parameters": "1.1B",
+      "architecture": "llama",
+      "context_length": 2048,
+      "supported_backends": ["vllm", "trt_llm"],
+      "recommended_backend": "vllm",
+      "use_case": "draft_model",
+      "hardware_requirements": {
+        "min_gpu_memory_gb": 4,
+        "recommended_gpu_memory_gb": 8,
+        "gpu_types": ["Any"]
+      }
+    },
+    "mistral-7b": {
+      "name": "mistralai/Mistral-7B-v0.1",
+      "size_gb": 14.5,
+      "parameters": "7B",
+      "architecture": "mistral",
+      "context_length": 8192,
+      "supported_backends": ["vllm", "trt_llm"],
+      "recommended_backend": "vllm",
+      "quantization_options": ["awq", "gptq"],
+      "hardware_requirements": {
+        "min_gpu_memory_gb": 16,
+        "recommended_gpu_memory_gb": 24,
+        "gpu_types": ["A100", "A10", "RTX 3090", "RTX 4090"]
+      }
+    },
+    "falcon-7b": {
+      "name": "tiiuae/falcon-7b",
+      "size_gb": 14.0,
+      "parameters": "7B",
+      "architecture": "falcon",
+      "context_length": 2048,
+      "supported_backends": ["vllm", "trt_llm"],
+      "recommended_backend": "vllm",
+      "quantization_options": ["gptq"],
+      "hardware_requirements": {
+        "min_gpu_memory_gb": 16,
+        "recommended_gpu_memory_gb": 24,
+        "gpu_types": ["A100", "A10", "RTX 3090"]
+      }
+    }
+  },
+  "model_pairs": {
+    "speculative_decoding": [
+      {
+        "name": "llama-2-7b-with-tinyllama",
+        "target": "meta-llama/Llama-2-7b-hf",
+        "draft": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+        "expected_speedup": 2.5,
+        "quality_score": 0.95
+      },
+      {
+        "name": "mistral-7b-with-tinyllama",
+        "target": "mistralai/Mistral-7B-v0.1",
+        "draft": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+        "expected_speedup": 2.3,
+        "quality_score": 0.94
+      }
+    ]
+  },
+  "defaults": {
+    "vllm": {
+      "model": "meta-llama/Llama-2-7b-hf",
+      "gpu_memory_utilization": 0.9,
+      "block_size": 16,
+      "max_model_len": 2048
+    },
+    "trt_llm": {
+      "model": "meta-llama/Llama-2-7b-hf",
+      "precision": "float16",
+      "max_batch_size": 8,
+      "max_input_len": 1024,
+      "max_output_len": 512
+    },
+    "speculative": {
+      "target_model": "meta-llama/Llama-2-7b-hf",
+      "draft_model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+      "num_speculative_tokens": 4
+    }
+  }
+}
