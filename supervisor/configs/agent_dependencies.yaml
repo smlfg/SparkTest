@@ -1,0 +1,119 @@
+# Agent Dependency Graph
+# Defines which agents depend on others (merge order)
+
+dependency_layers:
+  layer_0:
+    name: "Infrastructure Foundation"
+    agents:
+      - agent1-infra
+    description: "Base infrastructure: SSH, networking, Docker configs"
+
+  layer_1:
+    name: "Core Services"
+    agents:
+      - agent2-dashboard
+      - agent5-inference
+    description: "Dashboard and inference engine (parallel deployable)"
+    depends_on: [agent1-infra]
+
+  layer_2:
+    name: "ML Workloads"
+    agents:
+      - agent3-finetuning
+      - agent4-advanced
+    description: "Fine-tuning and advanced ML features"
+    depends_on: [agent1-infra, agent5-inference]
+
+  layer_3:
+    name: "Support Services"
+    agents:
+      - agent6-docs
+      - agent7-testing
+      - agent8-deployment
+    description: "Documentation, testing, deployment automation"
+    depends_on: [agent1-infra, agent2-dashboard]
+
+  layer_4:
+    name: "Cross-Cutting Concerns"
+    agents:
+      - agent9-security
+      - agent10-integration
+    description: "Security hardening and final integration"
+    depends_on: [agent1-infra, agent2-dashboard, agent3-finetuning]
+
+# Agent metadata
+agents:
+  agent1-infra:
+    name: "Infrastructure Foundation"
+    branch: "agent1-infra"
+    priority: 1
+    estimated_conflicts: ["docker-compose.yml", ".env", "shared/config_schema.yaml"]
+
+  agent2-dashboard:
+    name: "Monitoring Dashboard"
+    branch: "agent2-dashboard"
+    priority: 2
+    estimated_conflicts: ["docker-compose.yml", "requirements.txt", "ports"]
+
+  agent3-finetuning:
+    name: "LLaMA Factory Integration"
+    branch: "agent3-finetuning"
+    priority: 3
+    estimated_conflicts: ["docker-compose.yml", "requirements.txt"]
+
+  agent4-advanced:
+    name: "Advanced ML Features"
+    branch: "agent4-advanced"
+    priority: 3
+    estimated_conflicts: ["requirements.txt", "shared/utils/"]
+
+  agent5-inference:
+    name: "Inference Engine"
+    branch: "agent5-inference"
+    priority: 2
+    estimated_conflicts: ["docker-compose.yml", "requirements.txt"]
+    note: "Already integrated in main"
+
+  agent6-docs:
+    name: "Documentation System"
+    branch: "agent6-docs"
+    priority: 4
+    estimated_conflicts: ["README.md", "docs/"]
+
+  agent7-testing:
+    name: "Testing Framework"
+    branch: "agent7-testing"
+    priority: 4
+    estimated_conflicts: ["pytest.ini", "tests/", "requirements.txt"]
+
+  agent8-deployment:
+    name: "Deployment Automation"
+    branch: "agent8-deployment"
+    priority: 4
+    estimated_conflicts: ["docker-compose.yml", "scripts/"]
+
+  agent9-security:
+    name: "Security & Compliance"
+    branch: "agent9-security"
+    priority: 5
+    estimated_conflicts: ["docker-compose.yml", "shared/", ".env"]
+
+  agent10-integration:
+    name: "Integration Hub"
+    branch: "agent10-integration"
+    priority: 5
+    estimated_conflicts: ["docker-compose.yml", "tests/integration/"]
+
+# Port allocations (to prevent conflicts)
+port_allocations:
+  agent1-infra: [22, 2222]
+  agent2-dashboard: [11000, 11001, 11002]
+  agent3-finetuning: [7860, 7861]
+  agent4-advanced: [9000, 9001]
+  agent5-inference: [8080, 8888, 11434, 8000, 8001, 8002]
+  agent6-docs: [8090]
+  agent7-testing: []
+  agent8-deployment: []
+  agent9-security: [8443, 9443]
+  agent10-integration: [10000, 10001]
+  supervisor: [9999]

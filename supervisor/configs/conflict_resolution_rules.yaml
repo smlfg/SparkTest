@@ -1,0 +1,82 @@
+# Conflict Resolution Rules
+# Defines automated strategies for resolving common merge conflicts
+
+docker-compose.yml:
+  strategy: merge_all_services
+  description: "Merge all service definitions from both branches"
+  validation: "docker-compose config"
+  auto_resolve: true
+  priority: critical
+
+requirements.txt:
+  strategy: union_and_dedupe
+  description: "Union of all dependencies with version resolution"
+  validation: "pip install --dry-run -r requirements.txt"
+  auto_resolve: true
+  priority: high
+
+.env:
+  strategy: merge_with_namespace
+  description: "Merge environment variables with agent-specific prefixes"
+  validation: "python supervisor/utils/validate_env.py"
+  auto_resolve: true
+  priority: high
+
+configs/ports.yaml:
+  strategy: fail_on_conflict
+  description: "Port conflicts require manual resolution"
+  validation: "python supervisor/utils/validate_ports.py"
+  auto_resolve: false
+  priority: critical
+
+"*.py":
+  strategy: git_merge
+  description: "Standard git merge with conflict markers"
+  validation: "python -m py_compile {file}"
+  auto_resolve: false
+  priority: medium
+
+"*.md":
+  strategy: append_both
+  description: "Append content from both branches"
+  validation: "python -m markdown {file}"
+  auto_resolve: true
+  priority: low
+
+pytest.ini:
+  strategy: merge_sections
+  description: "Merge pytest configuration sections"
+  validation: "pytest --collect-only"
+  auto_resolve: true
+  priority: medium
+
+.gitignore:
+  strategy: union
+  description: "Union of all ignore patterns"
+  validation: "git check-ignore --verbose ."
+  auto_resolve: true
+  priority: low
+
+# Agent-specific configurations
+agents/*/config.yaml:
+  strategy: keep_theirs
+  description: "Agent configs are isolated, keep branch version"
+  validation: "python supervisor/utils/validate_agent_config.py {file}"
+  auto_resolve: true
+  priority: high
+
+# Shared utilities - conflicts indicate design issues
+shared/*.py:
+  strategy: fail_on_conflict
+  description: "Shared utilities must be coordinated, manual review required"
+  validation: "python -m py_compile {file}"
+  auto_resolve: false
+  priority: critical
+
+# Default rule
+default:
+  strategy: fail_on_conflict
+  description: "Unknown file type, manual resolution required"
+  validation: null
+  auto_resolve: false
+  priority: medium
