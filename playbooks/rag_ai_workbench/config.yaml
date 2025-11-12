@@ -1,0 +1,63 @@
+playbook:
+  name: "rag-ai-workbench"
+  description: "Retrieval-Augmented Generation pipeline with vector search"
+  version: "1.0.0"
+  agent: "agent9"
+
+  dependencies:
+    - agent4
+    - agent5
+
+  ports:
+    - 3000
+
+  endpoints:
+    health: "/health"
+    api: "/api"
+    metrics: "/metrics"
+
+  docker:
+    image: "dgx-spark/rag-workbench:latest"
+    base_image: "shared/base.Dockerfile"
+    environment:
+      AGENT_INFERENCE_URL: "http://agent4:8000"
+      EMBEDDING_MODEL: "text-embedding-ada-002"
+      LLM_MODEL: "gpt-4"
+
+  volumes:
+    - "./data:/app/data"
+    - "./embeddings:/app/embeddings"
+
+  gpu_required: false
+
+  resources:
+    memory: "8G"
+    shm_size: "1G"
+    cpu: "4.0"
+
+  health_check:
+    enabled: true
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    retries: 3
+    start_period: 30
+
+  scaling:
+    replicas: 1
+    autoscaling:
+      enabled: true
+      min_replicas: 1
+      max_replicas: 5
+      target_cpu_percent: 80
+
+  monitoring:
+    prometheus: true
+    grafana: true
+    logging:
+      level: "INFO"
+      format: "json"
+
+  security:
+    authentication: false
+    tls: false

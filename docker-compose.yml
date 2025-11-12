@@ -1,0 +1,300 @@
+version: '3.8'
+
+# Docker Compose configuration for Agent 9: Application Layer
+# All services integrate with Agent 4/5 (inference) and Agent 8 (multi-modal)
+
+services:
+  # ================================================================
+  # ComfyUI - Image Generation Interface (Port 8188)
+  # ================================================================
+  comfy-ui:
+    build:
+      context: .
+      dockerfile: shared/base.Dockerfile
+      args:
+        PLAYBOOK: comfy-ui
+    image: dgx-spark/comfy-ui:latest
+    container_name: agent9-comfy-ui
+    ports:
+      - "8188:8188"
+    volumes:
+      - ./playbooks/comfy_ui:/app/playbooks/comfy_ui
+      - ./models:/app/models
+      - ./output:/app/output
+      - ./shared:/app/shared
+    environment:
+      - AGENT_INFERENCE_URL=http://agent4:8000
+      - AGENT_MULTIMODAL_URL=http://agent8:8888
+      - CLI_ARGS=--listen 0.0.0.0
+      - PYTHONPATH=/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          memory: 16G
+          cpus: '8.0'
+    shm_size: '2g'
+    healthcheck:
+      test: ["CMD", "python", "/app/shared/health_check.py", "--port", "8188", "--endpoint", "/system_stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - agent9-network
+    labels:
+      - "agent=agent9"
+      - "playbook=comfy-ui"
+      - "prometheus.scrape=true"
+      - "prometheus.port=8188"
+
+  # ================================================================
+  # RAG AI Workbench (Port 3000)
+  # ================================================================
+  rag-workbench:
+    build:
+      context: .
+      dockerfile: shared/base.Dockerfile
+      args:
+        PLAYBOOK: rag-ai-workbench
+    image: dgx-spark/rag-workbench:latest
+    container_name: agent9-rag-workbench
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./playbooks/rag_ai_workbench:/app/playbooks/rag_ai_workbench
+      - ./data/rag:/app/data
+      - ./shared:/app/shared
+    environment:
+      - AGENT_INFERENCE_URL=http://agent4:8000
+      - EMBEDDING_MODEL=text-embedding-ada-002
+      - LLM_MODEL=gpt-4
+      - PYTHONPATH=/app
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4.0'
+    shm_size: '1g'
+    healthcheck:
+      test: ["CMD", "python", "/app/shared/health_check.py", "--port", "3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - agent9-network
+    labels:
+      - "agent=agent9"
+      - "playbook=rag-ai-workbench"
+      - "prometheus.scrape=true"
+      - "prometheus.port=3000"
+
+  # ================================================================
+  # Multi-Agent Chatbot (Port 8080)
+  # ================================================================
+  multi-agent-chatbot:
+    build:
+      context: .
+      dockerfile: shared/base.Dockerfile
+      args:
+        PLAYBOOK: multi-agent-chatbot
+    image: dgx-spark/multi-agent-chatbot:latest
+    container_name: agent9-chatbot
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./playbooks/multi_agent_chatbot:/app/playbooks/multi_agent_chatbot
+      - ./data/conversations:/app/conversations
+      - ./shared:/app/shared
+    environment:
+      - AGENT_INFERENCE_URL=http://agent4:8000
+      - LLM_MODEL=gpt-4
+      - NUM_AGENTS=5
+      - COORDINATION_ENABLED=true
+      - PYTHONPATH=/app
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+          cpus: '4.0'
+    shm_size: '512m'
+    healthcheck:
+      test: ["CMD", "python", "/app/shared/health_check.py", "--port", "8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - agent9-network
+    labels:
+      - "agent=agent9"
+      - "playbook=multi-agent-chatbot"
+      - "prometheus.scrape=true"
+      - "prometheus.port=8080"
+
+  # ================================================================
+  # Text-to-Knowledge-Graph (Port 3001)
+  # ================================================================
+  txt2kg:
+    build:
+      context: .
+      dockerfile: shared/base.Dockerfile
+      args:
+        PLAYBOOK: txt2kg
+    image: dgx-spark/txt2kg:latest
+    container_name: agent9-txt2kg
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./playbooks/txt2kg:/app/playbooks/txt2kg
+      - ./data/graphs:/app/graphs
+      - ./shared:/app/shared
+    environment:
+      - AGENT_INFERENCE_URL=http://agent4:8000
+      - NER_MODEL=gpt-4
+      - RELATION_MODEL=gpt-4
+      - PYTHONPATH=/app
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+          cpus: '4.0'
+    shm_size: '512m'
+    healthcheck:
+      test: ["CMD", "python", "/app/shared/health_check.py", "--port", "3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - agent9-network
+    labels:
+      - "agent=agent9"
+      - "playbook=txt2kg"
+      - "prometheus.scrape=true"
+      - "prometheus.port=3001"
+
+  # ================================================================
+  # Video Search & Summarization (Port 8081)
+  # ================================================================
+  vss:
+    build:
+      context: .
+      dockerfile: shared/base.Dockerfile
+      args:
+        PLAYBOOK: vss
+    image: dgx-spark/vss:latest
+    container_name: agent9-vss
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./playbooks/vss:/app/playbooks/vss
+      - ./data/videos:/app/videos
+      - ./data/frames:/app/frames
+      - ./shared:/app/shared
+    environment:
+      - AGENT_MULTIMODAL_URL=http://agent8:8888
+      - AGENT_LLM_URL=http://agent4:8000
+      - FRAME_EXTRACTION_FPS=1.0
+      - PYTHONPATH=/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, video]
+        limits:
+          memory: 12G
+          cpus: '6.0'
+    shm_size: '2g'
+    healthcheck:
+      test: ["CMD", "python", "/app/shared/health_check.py", "--port", "8081"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    restart: unless-stopped
+    networks:
+      - agent9-network
+    labels:
+      - "agent=agent9"
+      - "playbook=vss"
+      - "prometheus.scrape=true"
+      - "prometheus.port=8081"
+
+  # ================================================================
+  # Monitoring - Prometheus (Port 9090)
+  # ================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: agent9-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    restart: unless-stopped
+    networks:
+      - agent9-network
+    labels:
+      - "agent=agent9"
+      - "component=monitoring"
+
+  # ================================================================
+  # Monitoring - Grafana (Port 3002)
+  # ================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: agent9-grafana
+    ports:
+      - "3002:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    networks:
+      - agent9-network
+    depends_on:
+      - prometheus
+    labels:
+      - "agent=agent9"
+      - "component=monitoring"
+
+# ================================================================
+# Networks
+# ================================================================
+networks:
+  agent9-network:
+    driver: bridge
+    name: agent9-network
+    ipam:
+      config:
+        - subnet: 172.29.0.0/16
+
+# ================================================================
+# Volumes
+# ================================================================
+volumes:
+  prometheus-data:
+    name: agent9-prometheus-data
+  grafana-data:
+    name: agent9-grafana-data

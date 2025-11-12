@@ -1,0 +1,337 @@
+# Unified Configuration Schema for All Agents
+# This schema defines the standard configuration format for DGX Spark Playbooks
+
+# Schema version
+schema_version: "1.0.0"
+
+# Playbook configuration structure
+playbook:
+  # Playbook metadata
+  name:
+    type: string
+    required: true
+    description: "Name of the playbook (e.g., comfy-ui, rag-ai-workbench)"
+    pattern: "^[a-z0-9-]+$"
+
+  description:
+    type: string
+    required: true
+    description: "Human-readable description of the playbook"
+
+  version:
+    type: string
+    required: true
+    description: "Semantic version of the playbook"
+    pattern: "^\\d+\\.\\d+\\.\\d+$"
+
+  agent:
+    type: string
+    required: true
+    description: "Agent ID (e.g., agent1, agent2, ..., agent10)"
+    enum:
+      - agent1
+      - agent2
+      - agent3
+      - agent4
+      - agent5
+      - agent6
+      - agent7
+      - agent8
+      - agent9
+      - agent10
+
+  # Dependencies
+  dependencies:
+    type: array
+    required: true
+    description: "List of dependent agents/services"
+    items:
+      type: string
+    examples:
+      - ["agent4", "agent5"]
+      - ["agent8"]
+      - []
+
+  # Network configuration
+  ports:
+    type: array
+    required: true
+    description: "List of ports exposed by the service"
+    items:
+      type: integer
+      minimum: 1024
+      maximum: 65535
+    examples:
+      - [8188]
+      - [3000, 3001]
+
+  endpoints:
+    type: object
+    required: false
+    description: "Service endpoints"
+    properties:
+      health:
+        type: string
+        default: "/health"
+      metrics:
+        type: string
+        default: "/metrics"
+      api:
+        type: string
+        default: "/api"
+
+  # Docker configuration
+  docker:
+    type: object
+    required: true
+    properties:
+      image:
+        type: string
+        required: true
+        description: "Docker image name"
+
+      base_image:
+        type: string
+        required: false
+        default: "shared/base.Dockerfile"
+        description: "Base Dockerfile to use"
+
+      build_args:
+        type: object
+        required: false
+        description: "Build-time arguments"
+
+      environment:
+        type: object
+        required: false
+        description: "Environment variables"
+
+  # Storage configuration
+  volumes:
+    type: array
+    required: false
+    description: "Docker volumes to mount"
+    items:
+      type: string
+    examples:
+      - ["./data:/app/data", "./models:/app/models"]
+      - ["./output:/app/output"]
+
+  # GPU configuration
+  gpu_required:
+    type: boolean
+    required: true
+    default: false
+    description: "Whether the service requires GPU access"
+
+  gpu_config:
+    type: object
+    required: false
+    description: "GPU configuration (if gpu_required is true)"
+    properties:
+      count:
+        type: integer
+        minimum: 1
+        default: 1
+        description: "Number of GPUs required"
+
+      capabilities:
+        type: array
+        items:
+          type: string
+          enum: ["gpu", "compute", "utility", "graphics", "video"]
+        default: ["gpu"]
+
+      device_ids:
+        type: array
+        items:
+          type: integer
+        required: false
+        description: "Specific GPU device IDs to use"
+
+  # Resource limits
+  resources:
+    type: object
+    required: false
+    properties:
+      cpu:
+        type: string
+        description: "CPU limit (e.g., '4.0', '2000m')"
+
+      memory:
+        type: string
+        description: "Memory limit (e.g., '8G', '4096M')"
+
+      shm_size:
+        type: string
+        description: "Shared memory size (e.g., '2G')"
+        default: "1G"
+
+  # Health check configuration
+  health_check:
+    type: object
+    required: false
+    properties:
+      enabled:
+        type: boolean
+        default: true
+
+      endpoint:
+        type: string
+        default: "/health"
+
+      interval:
+        type: integer
+        description: "Health check interval in seconds"
+        default: 30
+
+      timeout:
+        type: integer
+        description: "Health check timeout in seconds"
+        default: 10
+
+      retries:
+        type: integer
+        description: "Number of retries before marking unhealthy"
+        default: 3
+
+      start_period:
+        type: integer
+        description: "Initial grace period in seconds"
+        default: 60
+
+  # Scaling configuration
+  scaling:
+    type: object
+    required: false
+    properties:
+      replicas:
+        type: integer
+        minimum: 1
+        default: 1
+        description: "Number of service replicas"
+
+      autoscaling:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+
+          min_replicas:
+            type: integer
+            minimum: 1
+            default: 1
+
+          max_replicas:
+            type: integer
+            minimum: 1
+            default: 10
+
+          target_cpu_percent:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 80
+
+  # Monitoring and observability
+  monitoring:
+    type: object
+    required: false
+    properties:
+      prometheus:
+        type: boolean
+        default: true
+        description: "Enable Prometheus metrics"
+
+      grafana:
+        type: boolean
+        default: false
+        description: "Enable Grafana dashboards"
+
+      logging:
+        type: object
+        properties:
+          level:
+            type: string
+            enum: ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+            default: "INFO"
+
+          format:
+            type: string
+            enum: ["json", "text"]
+            default: "json"
+
+  # Security configuration
+  security:
+    type: object
+    required: false
+    properties:
+      authentication:
+        type: boolean
+        default: false
+        description: "Enable authentication"
+
+      tls:
+        type: boolean
+        default: false
+        description: "Enable TLS/SSL"
+
+      secrets:
+        type: array
+        items:
+          type: string
+        description: "List of secrets to mount"
+
+# Example configurations for reference
+examples:
+  comfy_ui:
+    name: "comfy-ui"
+    description: "Advanced image generation interface"
+    version: "1.0.0"
+    agent: "agent9"
+    dependencies: ["agent4", "agent5", "agent8"]
+    ports: [8188]
+    endpoints:
+      health: "/system_stats"
+      api: "/api"
+    docker:
+      image: "dgx-spark/comfy-ui:latest"
+      environment:
+        CLI_ARGS: "--listen 0.0.0.0"
+    volumes:
+      - "./models:/app/models"
+      - "./output:/app/output"
+    gpu_required: true
+    gpu_config:
+      count: 1
+      capabilities: ["gpu"]
+    resources:
+      memory: "16G"
+      shm_size: "2G"
+    health_check:
+      enabled: true
+      endpoint: "/system_stats"
+      interval: 30
+      timeout: 10
+      retries: 3
+      start_period: 60
+
+  rag_workbench:
+    name: "rag-ai-workbench"
+    description: "Retrieval-Augmented Generation pipeline"
+    version: "1.0.0"
+    agent: "agent9"
+    dependencies: ["agent4", "agent5"]
+    ports: [3000]
+    docker:
+      image: "dgx-spark/rag-workbench:latest"
+    volumes:
+      - "./data:/app/data"
+    gpu_required: false
+    resources:
+      cpu: "4.0"
+      memory: "8G"
+    health_check:
+      enabled: true
+      endpoint: "/health"

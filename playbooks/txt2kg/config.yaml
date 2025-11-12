@@ -1,0 +1,61 @@
+playbook:
+  name: "txt2kg"
+  description: "Text-to-Knowledge-Graph extraction pipeline"
+  version: "1.0.0"
+  agent: "agent9"
+
+  dependencies:
+    - agent4
+    - agent5
+
+  ports:
+    - 3001
+
+  endpoints:
+    health: "/health"
+    api: "/api"
+    metrics: "/metrics"
+    visualize: "/visualize"
+
+  docker:
+    image: "dgx-spark/txt2kg:latest"
+    base_image: "shared/base.Dockerfile"
+    environment:
+      AGENT_INFERENCE_URL: "http://agent4:8000"
+      NER_MODEL: "gpt-4"
+      RELATION_MODEL: "gpt-4"
+
+  volumes:
+    - "./graphs:/app/graphs"
+    - "./exports:/app/exports"
+
+  gpu_required: false
+
+  resources:
+    memory: "6G"
+    shm_size: "512M"
+    cpu: "4.0"
+
+  health_check:
+    enabled: true
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    retries: 3
+    start_period: 30
+
+  scaling:
+    replicas: 1
+    autoscaling:
+      enabled: false
+
+  monitoring:
+    prometheus: true
+    grafana: true
+    logging:
+      level: "INFO"
+      format: "json"
+
+  security:
+    authentication: false
+    tls: false

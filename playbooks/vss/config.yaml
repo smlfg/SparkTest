@@ -1,0 +1,67 @@
+playbook:
+  name: "vss"
+  description: "Video Search and Summarization tool"
+  version: "1.0.0"
+  agent: "agent9"
+
+  dependencies:
+    - agent8
+
+  ports:
+    - 8081
+
+  endpoints:
+    health: "/health"
+    api: "/api"
+    metrics: "/metrics"
+    search: "/search"
+    summarize: "/summarize"
+
+  docker:
+    image: "dgx-spark/vss:latest"
+    base_image: "shared/base.Dockerfile"
+    environment:
+      AGENT_MULTIMODAL_URL: "http://agent8:8888"
+      AGENT_LLM_URL: "http://agent4:8000"
+      FRAME_EXTRACTION_FPS: "1.0"
+
+  volumes:
+    - "./videos:/app/videos"
+    - "./frames:/app/frames"
+    - "./summaries:/app/summaries"
+
+  gpu_required: true
+  gpu_config:
+    count: 1
+    capabilities:
+      - gpu
+      - video
+
+  resources:
+    memory: "12G"
+    shm_size: "2G"
+    cpu: "6.0"
+
+  health_check:
+    enabled: true
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    retries: 3
+    start_period: 45
+
+  scaling:
+    replicas: 1
+    autoscaling:
+      enabled: false
+
+  monitoring:
+    prometheus: true
+    grafana: true
+    logging:
+      level: "INFO"
+      format: "json"
+
+  security:
+    authentication: false
+    tls: false

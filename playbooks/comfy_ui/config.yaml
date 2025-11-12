@@ -1,0 +1,68 @@
+playbook:
+  name: "comfy-ui"
+  description: "Advanced image generation interface with node-based workflow"
+  version: "1.0.0"
+  agent: "agent9"
+
+  dependencies:
+    - agent4
+    - agent5
+    - agent8
+
+  ports:
+    - 8188
+
+  endpoints:
+    health: "/system_stats"
+    api: "/api"
+    metrics: "/metrics"
+
+  docker:
+    image: "dgx-spark/comfy-ui:latest"
+    base_image: "shared/base.Dockerfile"
+    environment:
+      CLI_ARGS: "--listen 0.0.0.0"
+      AGENT_INFERENCE_URL: "http://agent4:8000"
+      AGENT_MULTIMODAL_URL: "http://agent8:8888"
+
+  volumes:
+    - "./models:/app/models"
+    - "./input:/app/input"
+    - "./output:/app/output"
+    - "./custom_nodes:/app/custom_nodes"
+
+  gpu_required: true
+  gpu_config:
+    count: 1
+    capabilities:
+      - gpu
+    device_ids: []
+
+  resources:
+    memory: "16G"
+    shm_size: "2G"
+    cpu: "8.0"
+
+  health_check:
+    enabled: true
+    endpoint: "/system_stats"
+    interval: 30
+    timeout: 10
+    retries: 3
+    start_period: 60
+
+  scaling:
+    replicas: 1
+    autoscaling:
+      enabled: false
+
+  monitoring:
+    prometheus: true
+    grafana: true
+    logging:
+      level: "INFO"
+      format: "json"
+
+  security:
+    authentication: false
+    tls: false

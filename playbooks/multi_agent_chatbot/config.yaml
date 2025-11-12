@@ -1,0 +1,65 @@
+playbook:
+  name: "multi-agent-chatbot"
+  description: "Orchestrated multi-agent conversational system"
+  version: "1.0.0"
+  agent: "agent9"
+
+  dependencies:
+    - agent4
+    - agent5
+
+  ports:
+    - 8080
+
+  endpoints:
+    health: "/health"
+    api: "/api"
+    metrics: "/metrics"
+    chat: "/chat"
+
+  docker:
+    image: "dgx-spark/multi-agent-chatbot:latest"
+    base_image: "shared/base.Dockerfile"
+    environment:
+      AGENT_INFERENCE_URL: "http://agent4:8000"
+      LLM_MODEL: "gpt-4"
+      NUM_AGENTS: "5"
+      COORDINATION_ENABLED: "true"
+
+  volumes:
+    - "./conversations:/app/conversations"
+    - "./agent_logs:/app/agent_logs"
+
+  gpu_required: false
+
+  resources:
+    memory: "6G"
+    shm_size: "512M"
+    cpu: "4.0"
+
+  health_check:
+    enabled: true
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    retries: 3
+    start_period: 30
+
+  scaling:
+    replicas: 1
+    autoscaling:
+      enabled: true
+      min_replicas: 1
+      max_replicas: 10
+      target_cpu_percent: 75
+
+  monitoring:
+    prometheus: true
+    grafana: true
+    logging:
+      level: "INFO"
+      format: "json"
+
+  security:
+    authentication: false
+    tls: false

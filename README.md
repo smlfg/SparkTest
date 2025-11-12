@@ -6,6 +6,8 @@ End-user applications and interfaces for the distributed AI infrastructure.
 
 Agent 9 provides production-ready application templates and deployment playbooks for building end-user AI applications. It integrates with Agent 4/5 (inference) and Agent 8 (multi-modal) to deliver complete, scalable solutions.
 
+**All Agent 9 services use standardized shared interfaces** - see [SHARED_INTERFACES.md](SHARED_INTERFACES.md) for details.
+
 ## Architecture
 
 ```
@@ -225,15 +227,40 @@ results = await vss.search("Apache Spark", search_type="transcript")
 
 ---
 
-## Installation
+## Quick Start
 
-### Prerequisites
+### Using Docker Compose (Recommended)
+
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit .env with your configuration
+vim .env
+
+# Start all services
+docker-compose up -d
+
+# Check service health
+python shared/health_check.py --agent9
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+### Manual Installation
+
+#### Prerequisites
 
 - Python 3.8+
+- Docker with NVIDIA Container Toolkit
 - Agent 4/5 inference services running
 - Agent 8 multi-modal service running (for ComfyUI and VSS)
 
-### Setup
+#### Setup
 
 ```bash
 # Clone repository
@@ -242,6 +269,10 @@ cd SparkTest
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Set up environment
+cp .env.example .env
+vim .env
 
 # Run application registry
 python agent9_app_registry.py
@@ -282,42 +313,108 @@ APPLICATIONS = {
 
 ## Deployment
 
-### Docker Compose
+### Docker Compose (Single Node)
 
-Each playbook includes deployment configurations:
+All services can be deployed with a single command:
 
 ```bash
-# ComfyUI deployment
-cd playbooks/comfy_ui
+# Start all services
 docker-compose up -d
 
-# RAG Workbench
-cd playbooks/rag_ai_workbench
-docker-compose up -d
+# Start specific service
+docker-compose up -d comfy-ui
+
+# Scale services
+docker-compose up -d --scale rag-workbench=3
+
+# View service status
+docker-compose ps
+
+# View logs
+docker-compose logs -f comfy-ui
+```
+
+### Docker Compose (Multi-Node with Swarm)
+
+```bash
+# Initialize swarm
+docker swarm init
+
+# Deploy stack
+docker stack deploy -c docker-compose.yml agent9
+
+# List services
+docker service ls
+
+# Scale service
+docker service scale agent9_rag-workbench=3
+
+# Remove stack
+docker stack rm agent9
 ```
 
 ### Kubernetes
 
 Production deployments should use Kubernetes for orchestration:
 
+```bash
+# Apply configurations
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/deployments/
+kubectl apply -f k8s/services/
+
+# Check status
+kubectl get pods -n agent9
+kubectl get services -n agent9
+
+# Scale deployment
+kubectl scale deployment rag-workbench --replicas=3 -n agent9
+```
+
+Example Kubernetes deployment:
+
 ```yaml
-# Example deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rag-workbench
+  namespace: agent9
 spec:
   replicas: 3
+  selector:
+    matchLabels:
+      app: rag-workbench
   template:
+    metadata:
+      labels:
+        app: rag-workbench
     spec:
       containers:
       - name: rag-app
-        image: agent9/rag-workbench:latest
+        image: dgx-spark/rag-workbench:latest
         ports:
         - containerPort: 3000
         env:
-        - name: AGENT_URL
+        - name: AGENT_INFERENCE_URL
           value: "http://agent4-service:8000"
+        resources:
+          limits:
+            memory: "8Gi"
+            cpu: "4"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-workbench-service
+  namespace: agent9
+spec:
+  selector:
+    app: rag-workbench
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+  type: LoadBalancer
 ```
 
 ## API Examples
@@ -454,6 +551,131 @@ asyncio.run(diagnose())
 - Add caching layers
 - Optimize batch sizes
 - Use load balancing
+
+---
+
+## Shared Interfaces
+
+Agent 9 uses standardized shared interfaces across all services. For complete documentation, see [SHARED_INTERFACES.md](SHARED_INTERFACES.md).
+
+### 1. Docker Base Image
+
+All services inherit from `shared/base.Dockerfile` which provides:
+- NVIDIA PyTorch 24.10 base
+- CUDA Toolkit 12.3
+- Common Python dependencies
+- Health check utilities
+
+```bash
+# Build base image
+docker build -f shared/base.Dockerfile -t dgx-spark/base:latest .
+```
+
+### 2. Unified Configuration Schema
+
+All playbooks use standardized YAML configuration (`playbooks/*/config.yaml`):
+
+```yaml
+playbook:
+  name: "service-name"
+  agent: "agent9"
+  dependencies: ["agent4", "agent5"]
+  ports: [8188]
+  gpu_required: true
+  resources:
+    memory: "16G"
+    cpu: "8.0"
+```
+
+Load configurations in Python:
+
+```python
+from shared.utils.config_loader import load_playbook_config
+
+config = load_playbook_config("playbooks/comfy_ui/config.yaml")
+```
+
+### 3. Health Check API
+
+Unified health checking for all services:
+
+```bash
+# Check single service
+python shared/health_check.py --port 8188 --endpoint /health
+
+# Check all Agent 9 services
+python shared/health_check.py --agent9
+
+# Output as JSON
+python shared/health_check.py --port 8188 --json
+```
+
+Use in Python:
+
+```python
+from shared.health_check import HealthChecker
+
+checker = HealthChecker()
+result = await checker.check_service(host="localhost", port=8188)
+print(f"Status: {result.status.value}")
+```
+
+### 4. Shared Utilities
+
+- **Logger**: `shared/utils/logger.py` - Consistent JSON logging
+- **Config Loader**: `shared/utils/config_loader.py` - Configuration validation
+
+```python
+from shared.utils.logger import setup_logger
+
+logger = setup_logger(
+    name="agent9",
+    level="INFO",
+    log_format="json",
+    agent="agent9",
+    playbook="comfy-ui"
+)
+```
+
+### 5. Monitoring
+
+All services expose Prometheus metrics at `/metrics`:
+
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3002 (admin/admin)
+
+```bash
+# View service metrics
+curl http://localhost:8188/metrics
+```
+
+### 6. Project Structure
+
+```
+SparkTest/
+├── shared/                      # Shared infrastructure
+│   ├── base.Dockerfile          # Base Docker image
+│   ├── config_schema.yaml       # Configuration schema
+│   ├── health_check.py          # Health check API
+│   └── utils/                   # Shared utilities
+├── playbooks/                   # Agent 9 playbooks
+│   ├── comfy_ui/
+│   ├── rag_ai_workbench/
+│   ├── multi_agent_chatbot/
+│   ├── txt2kg/
+│   └── vss/
+├── monitoring/                  # Monitoring configs
+│   ├── prometheus.yml
+│   └── grafana/
+├── tests/                       # Tests
+│   ├── unit/
+│   └── integration/
+├── docker-compose.yml           # Main orchestration
+├── .env.example                 # Environment template
+└── SHARED_INTERFACES.md         # Detailed documentation
+```
+
+---
 
 ## Dependencies
 
