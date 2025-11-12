@@ -3,12 +3,28 @@
 # Core async and HTTP
 aiohttp==3.9.1
 asyncio-atexit==1.0.1
+httpx==0.26.0
 
 # Web frameworks
 fastapi==0.109.0
 uvicorn[standard]==0.27.0
 pydantic==2.5.3
 pydantic-settings==2.1.0
+
+# ===== RAG and LLM Orchestration =====
+# LangChain for RAG pipeline
+langchain==0.1.0
+langchain-community==0.0.10
+langchain-core==0.1.10
+
+# Vector databases
+chromadb==0.4.22
+milvus==2.3.5  # Alternative vector DB
+
+# Embeddings
+sentence-transformers==2.3.1
+transformers==4.36.2
+torch==2.1.2
 
 # Data processing
 numpy==1.26.3
