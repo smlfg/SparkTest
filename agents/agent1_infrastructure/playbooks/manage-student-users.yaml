@@ -1,0 +1,211 @@
+---
+# Playbook: Manage Student Users
+# Purpose: Create and manage student user accounts across cluster
+# Usage: ansible-playbook manage-student-users.yaml -i inventory.ini
+
+- name: Manage Student Users on Spark Cluster
+  hosts: spark_cluster
+  become: yes
+  gather_facts: yes
+
+  vars:
+    workspace_base: "/workspace"
+    quota_soft: "50G"
+    quota_hard: "55G"
+    student_groups:
+      - docker
+      - users
+    default_shell: "/bin/bash"
+
+    # List of students to create
+    students:
+      - username: "student01"
+        quota_soft: "50G"
+        quota_hard: "55G"
+      - username: "student02"
+        quota_soft: "50G"
+        quota_hard: "55G"
+      - username: "student03"
+        quota_soft: "50G"
+        quota_hard: "55G"
+      - username: "student04"
+        quota_soft: "50G"
+        quota_hard: "55G"
+      - username: "student05"
+        quota_soft: "50G"
+        quota_hard: "55G"
+
+  tasks:
+    - name: Install required packages
+      package:
+        name:
+          - quota
+          - openssh-server
+        state: present
+
+    - name: Create workspace base directory
+      file:
+        path: "{{ workspace_base }}"
+        state: directory
+        mode: '0755'
+
+    - name: Check if quota is enabled
+      shell: grep -q "usrquota" /etc/fstab
+      register: quota_enabled
+      failed_when: false
+      changed_when: false
+
+    - name: Warn if quota not enabled
+      debug:
+        msg: "WARNING: Quota not enabled in /etc/fstab. Add 'usrquota,grpquota' to mount options."
+      when: quota_enabled.rc != 0
+
+    - name: Initialize quota database
+      shell: |
+        quotaoff -v {{ workspace_base }} 2>/dev/null || true
+        quotacheck -cugm {{ workspace_base }} 2>/dev/null || true
+        quotaon -v {{ workspace_base }} 2>/dev/null || true
+      when: quota_enabled.rc == 0
+      ignore_errors: yes
+
+    - name: Create student users
+      user:
+        name: "{{ item.username }}"
+        shell: "{{ default_shell }}"
+        groups: "{{ student_groups }}"
+        append: yes
+        create_home: yes
+        state: present
+      loop: "{{ students }}"
+
+    - name: Set default password (must change on first login)
+      shell: |
+        echo "{{ item.username }}:spark$(date +%Y)" | chpasswd
+        passwd -e {{ item.username }}
+      loop: "{{ students }}"
+      no_log: true
+
+    - name: Create workspace structure for each student
+      file:
+        path: "{{ workspace_base }}/{{ item.0.username }}/{{ item.1 }}"
+        state: directory
+        owner: "{{ item.0.username }}"
+        group: "{{ item.0.username }}"
+        mode: '0755'
+      loop: "{{ students | product(['datasets', 'models', 'checkpoints', 'notebooks', 'scripts', 'logs']) | list }}"
+      loop_control:
+        label: "{{ item.0.username }}/{{ item.1 }}"
+
+    - name: Set stricter permissions for logs directory
+      file:
+        path: "{{ workspace_base }}/{{ item.username }}/logs"
+        mode: '0700'
+      loop: "{{ students }}"
+
+    - name: Set user quotas
+      shell: |
+        SOFT_BYTES=$(numfmt --from=iec {{ item.quota_soft }})
+        HARD_BYTES=$(numfmt --from=iec {{ item.quota_hard }})
+        SOFT_MB=$((SOFT_BYTES / 1024 / 1024))
+        HARD_MB=$((HARD_BYTES / 1024 / 1024))
+        setquota -u {{ item.username }} $SOFT_MB $HARD_MB 0 0 {{ workspace_base }}
+      loop: "{{ students }}"
+      when: quota_enabled.rc == 0
+      ignore_errors: yes
+
+    - name: Generate SSH keys for students
+      become_user: "{{ item.username }}"
+      openssh_keypair:
+        path: "/home/{{ item.username }}/.ssh/id_ed25519"
+        type: ed25519
+        comment: "{{ item.username }}@spark-cluster"
+      loop: "{{ students }}"
+
+    - name: Create welcome message
+      copy:
+        dest: "/home/{{ item.username }}/.spark_welcome"
+        owner: "{{ item.username }}"
+        group: "{{ item.username }}"
+        mode: '0644'
+        content: |
+          Welcome to Spark Cluster, {{ item.username }}!
+
+          Your workspace: {{ workspace_base }}/{{ item.username }}
+          Quota: {{ item.quota_soft }} (soft) / {{ item.quota_hard }} (hard)
+
+          Directory structure:
+            - datasets/     : Store your datasets here
+            - models/       : Save trained models
+            - checkpoints/  : Training checkpoints
+            - notebooks/    : Jupyter notebooks
+            - scripts/      : Python/bash scripts
+            - logs/         : Application logs
+
+          Useful commands:
+            - quota -s      : Check your disk usage
+            - nvidia-smi    : Check GPU status
+            - docker ps     : List your containers
+
+          For support, contact your cluster administrator.
+      loop: "{{ students }}"
+
+    - name: Add welcome message to bashrc
+      lineinfile:
+        path: "/home/{{ item.username }}/.bashrc"
+        line: "[ -f ~/.spark_welcome ] && cat ~/.spark_welcome"
+        create: yes
+        owner: "{{ item.username }}"
+        group: "{{ item.username }}"
+      loop: "{{ students }}"
+
+    - name: Create resource limits for students
+      copy:
+        dest: "/etc/security/limits.d/{{ item.username }}.conf"
+        content: |
+          # Resource limits for {{ item.username }}
+          {{ item.username }} soft nproc 1024
+          {{ item.username }} hard nproc 2048
+          {{ item.username }} soft nofile 4096
+          {{ item.username }} hard nofile 8192
+          {{ item.username }} soft memlock unlimited
+          {{ item.username }} hard memlock unlimited
+        mode: '0644'
+      loop: "{{ students }}"
+
+    - name: Generate student user report
+      shell: |
+        echo "Student Users on {{ ansible_hostname }}" > /tmp/student_report.txt
+        echo "Generated: $(date)" >> /tmp/student_report.txt
+        echo "======================================" >> /tmp/student_report.txt
+        echo "" >> /tmp/student_report.txt
+        {% for student in students %}
+        echo "User: {{ student.username }}" >> /tmp/student_report.txt
+        echo "  Home: /home/{{ student.username }}" >> /tmp/student_report.txt
+        echo "  Workspace: {{ workspace_base }}/{{ student.username }}" >> /tmp/student_report.txt
+        id {{ student.username }} >> /tmp/student_report.txt 2>&1 || true
+        quota -s -u {{ student.username }} >> /tmp/student_report.txt 2>&1 || true
+        echo "" >> /tmp/student_report.txt
+        {% endfor %}
+      args:
+        creates: /tmp/student_report.txt
+
+    - name: Display report location
+      debug:
+        msg: "Student user report created at /tmp/student_report.txt on {{ ansible_hostname }}"
+
+- name: Collect reports from all nodes
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Summary
+      debug:
+        msg: |
+          Student user setup completed across cluster.
+          Total students: {{ students | length }}
+          Nodes configured: {{ groups['spark_cluster'] | length }}
+
+          Next steps:
+          1. Distribute passwords to students securely
+          2. Verify SSH access
+          3. Test workspace access
+          4. Monitor quota usage

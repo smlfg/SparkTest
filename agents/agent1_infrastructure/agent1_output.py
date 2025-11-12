@@ -190,12 +190,76 @@ class Agent1Output:
             "ssh_key_exists": Path(self.get_ssh_config()["key_path"]).exists(),
             "inventory_exists": (self.config_dir / "inventory.ini").exists(),
             "tailscale_configured": self.get_tailscale_ip() is not None,
-            "nccl_configured": self.get_nccl_config()["enabled"]
+            "nccl_configured": self.get_nccl_config()["enabled"],
+            "student_users_configured": (self.config_dir / "students.conf").exists()
         }
 
         validation["ready"] = validation["config_exists"] and validation["ssh_key_exists"]
 
         return validation
+
+    def get_student_config(self) -> Dict:
+        """Get student user management configuration"""
+        students_conf = self.config_dir / "students.conf"
+
+        config = {
+            "enabled": students_conf.exists(),
+            "workspace_base": "/workspace",
+            "quota_soft": "50G",
+            "quota_hard": "55G",
+            "students": []
+        }
+
+        if students_conf.exists():
+            try:
+                # Parse bash config file
+                with open(students_conf, 'r') as f:
+                    content = f.read()
+
+                # Extract students array
+                import re
+                students_match = re.search(r'STUDENTS=\((.*?)\)', content, re.DOTALL)
+                if students_match:
+                    students_str = students_match.group(1)
+                    config["students"] = [s.strip().strip('"').strip("'")
+                                        for s in students_str.split()
+                                        if s.strip()]
+
+                # Extract other config values
+                for line in content.split('\n'):
+                    if line.startswith('WORKSPACE_BASE='):
+                        config["workspace_base"] = line.split('=')[1].strip('"').strip("'")
+                    elif line.startswith('QUOTA_SOFT='):
+                        config["quota_soft"] = line.split('=')[1].strip('"').strip("'")
+                    elif line.startswith('QUOTA_HARD='):
+                        config["quota_hard"] = line.split('=')[1].strip('"').strip("'")
+
+            except Exception as e:
+                config["error"] = str(e)
+
+        return config
+
+    def list_student_users(self) -> List[Dict]:
+        """List all student users on the cluster"""
+        from pathlib import Path
+
+        student_config = self.get_student_config()
+        workspace_base = Path(student_config["workspace_base"])
+
+        if not workspace_base.exists():
+            return []
+
+        students = []
+        for workspace in workspace_base.iterdir():
+            if workspace.is_dir():
+                username = workspace.name
+                students.append({
+                    "username": username,
+                    "workspace": str(workspace),
+                    "exists": workspace.exists()
+                })
+
+        return students
 
 
 def get_cluster_config() -> Dict:
@@ -217,6 +281,18 @@ def get_connection_info() -> Dict:
         "ssh": agent.get_ssh_config(),
         "network": agent.get_network_config(),
         "nccl": agent.get_nccl_config()
+    }
+
+
+def get_student_info() -> Dict:
+    """
+    Get student user management information
+    Returns student configuration and list
+    """
+    agent = Agent1Output()
+    return {
+        "config": agent.get_student_config(),
+        "users": agent.list_student_users()
     }
 
 
@@ -250,6 +326,9 @@ if __name__ == "__main__":
             output = sys.argv[2] if len(sys.argv) > 2 else "cluster_config.json"
             path = agent.export_config(output)
             print(f"Configuration exported to: {path}")
+        elif command == "students":
+            student_info = get_student_info()
+            print(json.dumps(student_info, indent=2))
         else:
             print(f"Unknown command: {command}")
             sys.exit(1)
