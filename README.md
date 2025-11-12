@@ -1,69 +1,88 @@
-# Agent 3: Development Environments
+# DGX Spark Playbooks
 
-**Scope**: IDEs + Coding Tools
+**Multi-Agent Development and Deployment System**
 
-A comprehensive development environment setup system featuring VS Code remote server, optimized JAX ARM64 container, and multiple language development templates.
+A comprehensive infrastructure automation system featuring shared base images, unified configuration, health monitoring, and modular agent architecture.
 
-## Features
+## 🏗️ Architecture
 
-### 🚀 Core Deliverables
+### Shared Infrastructure
 
-1. **VS Code Remote Server** - Cloud-based IDE accessible from anywhere
-2. **JAX ARM64 Container** - Optimized machine learning environment for ARM64
-3. **Dev Environment Templates** - Pre-configured setups for Python, Rust, Go, and C++
-4. **Code Launch Scripts** - Automated setup and management tools
+All agents build on common foundation:
+- **Base Docker Image** - NVIDIA PyTorch with CUDA support
+- **Unified Config Schema** - Standardized YAML configuration
+- **Health Check API** - Service monitoring and validation
+- **Common Utilities** - Logging, config loading, Docker ops
 
-### 📦 Playbooks
+### Agent System
 
-- **vscode** - Remote development server setup
-- **jax** - Optimized JAX environment with GPU support
+```
+agents/
+├── agent1_infra/           # Infrastructure (planned)
+├── agent2_dashboard/       # Dashboard (planned)
+├── agent3_dev_environments # ✅ Development Environments (implemented)
+├── agent4_compute/         # Compute (planned)
+├── agent5_storage/         # Storage (planned)
+├── agent6_networking/      # Networking (planned)
+├── agent7_security/        # Security (planned)
+├── agent8_monitoring/      # Monitoring (planned)
+├── agent9_backup/          # Backup (planned)
+└── agent10_integration/    # Integration (planned)
+```
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Required**: Docker (for JAX container)
-- **Optional**: Ansible (for playbook-based setup)
-- **Recommended**: 8GB+ RAM, multi-core CPU
+- Docker 20.10+
+- NVIDIA Docker runtime (for GPU support)
+- Python 3.11+
+- 16GB+ RAM recommended
 
 ### Installation
 
 ```bash
-# Clone and navigate to repository
+# Clone repository
+git clone https://github.com/smlfg/SparkTest.git
 cd SparkTest
 
-# Make launch script executable
-chmod +x agent3_launch.sh
+# Build shared base image
+docker-compose build base
 
-# Setup complete environment (VS Code + JAX)
+# Launch Agent 3 (Development Environments)
+cd agents/agent3_dev_environments
 ./agent3_launch.sh all
 ```
 
-## Usage
+## 📦 Agent 3: Development Environments (Implemented)
 
-### Basic Commands
+**Status**: ✅ Production Ready
+
+### Features
+
+- **VS Code Remote Server** - Web-based IDE (port 8443)
+- **JAX ARM64 Container** - ML environment with Jupyter (port 8888)
+- **Dev Templates** - Python, Rust, Go, C++ configurations
+- **Launch Scripts** - Automated setup and management
+
+### Usage
 
 ```bash
+# From project root
+cd agents/agent3_dev_environments
+
 # Setup complete environment
 ./agent3_launch.sh all
 
-# Start VS Code Server only
-./agent3_launch.sh vscode
+# Individual components
+./agent3_launch.sh vscode    # VS Code Server
+./agent3_launch.sh jax       # JAX Container
 
-# Launch JAX container only
-./agent3_launch.sh jax
-
-# Check environment status
+# Check status
 ./agent3_launch.sh status
-
-# Stop JAX container
-./agent3_launch.sh stop-jax
-
-# List available templates
-./agent3_launch.sh templates
 ```
 
-### Interface Output Example
+### Interface Output
 
 ```bash
 # agent3_launch.sh
@@ -71,342 +90,360 @@ start_vscode_server --port 8443
 launch_jax_container --gpus all
 ```
 
-### Advanced Usage
+### Access Points
 
-```bash
-# Custom VS Code port
-./agent3_launch.sh vscode --port 9000
+- **VS Code**: http://localhost:8443 (password: changeme123)
+- **Jupyter Lab**: http://localhost:8888 (token: jaxdev123)
+- **TensorBoard**: http://localhost:6006
 
-# JAX with specific GPUs
-./agent3_launch.sh jax --gpus 0,1
+[Full Agent 3 Documentation →](agents/agent3_dev_environments/README.md)
 
-# Use Ansible playbooks
-./agent3_launch.sh all --ansible
+## 🛠️ Shared Infrastructure
+
+### 1. Docker Base Image
+
+```dockerfile
+FROM nvcr.io/nvidia/pytorch:24.10-py3
+RUN apt-get update && apt-get install -y \
+    nvidia-container-toolkit \
+    cuda-toolkit-12-0
 ```
 
-### Using Environment Templates
-
+**Build:**
 ```bash
-# Python Machine Learning
-source agent3/templates/python-ml.env
-./agent3_launch.sh jax
-
-# Rust Development
-source agent3/templates/rust-dev.env
-
-# Go Development
-source agent3/templates/go-dev.env
-
-# C++ Development
-source agent3/templates/cpp-dev.env
+docker build -f shared/base.Dockerfile -t dgx-spark-base:latest .
 ```
 
-## Components
-
-### 1. VS Code Remote Server
-
-Cloud-based VS Code accessible via web browser.
-
-**Features:**
-- Web-based IDE
-- Extension support
-- Multi-language support
-- Persistent sessions
-
-**Access:**
-- URL: `http://localhost:8443`
-- Default Password: `changeme123`
-
-**Configuration:**
-```bash
-export VSCODE_PORT=8443
-export VSCODE_PASSWORD=your_password
-./agent3_launch.sh vscode
+**Usage in Agents:**
+```dockerfile
+FROM dgx-spark-base:latest
+# Your agent-specific configuration
 ```
 
-### 2. JAX ARM64 Container
+### 2. Unified Config Schema
 
-Optimized container for machine learning with JAX on ARM64 architecture.
+Standard YAML format for all playbooks:
 
-**Features:**
-- JAX with CPU/GPU support
-- Jupyter Lab integration
-- TensorBoard support
-- Scientific computing stack (NumPy, SciPy, Pandas)
-- ML frameworks (Optax, Flax, Haiku)
+```yaml
+# Example: agent3/config.yaml
+name: "jax-environment"
+agent: "agent3"
+version: "1.0.0"
+description: "JAX development environment"
 
-**Access:**
-- Jupyter Lab: `http://localhost:8888` (token: `jaxdev123`)
-- TensorBoard: `http://localhost:6006`
+dependencies:
+  - "agent1"
+  - "docker"
 
-**Container Management:**
+ports:
+  - 8888
+  - 6006
+
+gpu_required: true
+gpu_config:
+  count: 1
+  capabilities: ["compute", "utility"]
+
+health_check:
+  enabled: true
+  endpoint: "/health"
+  port: 8888
+```
+
+[Full Schema Documentation →](shared/config_schema.yaml)
+
+### 3. Health Check API
+
+```python
+from shared import check_service, wait_for_service
+
+# Quick health check
+if check_service(port=8888, endpoint="/health"):
+    print("Service is healthy")
+
+# Wait for service to be ready
+wait_for_service(port=8888, timeout=60)
+```
+
+**CLI Usage:**
 ```bash
-# Launch container
-./agent3_launch.sh jax --gpus all
+# Check service
+python shared/health_check.py 8888 --endpoint /health
 
-# Stop container
-./agent3_launch.sh stop-jax
+# Wait for service
+python shared/health_check.py 8888 --wait --wait-timeout 60
+
+# JSON output
+python shared/health_check.py 8888 --json
+```
+
+### 4. Common Utilities
+
+```python
+# Configuration loading
+from shared.utils import load_config, validate_config
+config = load_config("config.yaml")
+validate_config(config)
+
+# Logging
+from shared.utils import setup_logger
+logger = setup_logger("agent3", level="INFO")
+
+# Docker operations
+from shared.utils import check_docker, is_container_running
+if check_docker():
+    if is_container_running("agent3-jax-dev"):
+        print("Container running")
+```
+
+[Full Utilities Documentation →](shared/README.md)
+
+## 📂 Project Structure
+
+```
+dgx-spark-playbooks/
+├── agents/                       # Agent implementations
+│   ├── agent1_infra/
+│   ├── agent2_dashboard/
+│   └── agent3_dev_environments/  # ✅ Implemented
+│       ├── agent3_launch.sh     # Main launcher
+│       ├── playbooks/           # Ansible + Shell scripts
+│       ├── containers/          # Docker configs
+│       └── templates/           # Dev environment templates
+├── shared/                       # Shared infrastructure
+│   ├── base.Dockerfile          # Base Docker image
+│   ├── config_schema.yaml       # Unified config format
+│   ├── health_check.py          # Health monitoring API
+│   └── utils/                   # Common utilities
+│       ├── config_loader.py
+│       ├── logger.py
+│       └── docker_utils.py
+├── tests/                        # Test suite
+│   ├── unit/                    # Unit tests
+│   └── integration/             # Integration tests
+├── docker-compose.yml            # Root orchestration
+├── README.md                     # This file
+├── CONTRIBUTING.md               # Contribution guidelines
+└── requirements.txt              # Python dependencies
+```
+
+## 🐳 Docker Compose
+
+Orchestrate all agents from root:
+
+```bash
+# Build base image
+docker-compose build base
+
+# Launch all services
+docker-compose up -d
+
+# Launch specific agent
+docker-compose up -d agent3-jax
 
 # View logs
-docker logs jax-dev-environment
+docker-compose logs -f agent3-jax
 
-# Enter container shell
-docker exec -it jax-dev-environment bash
+# Stop all
+docker-compose down
 ```
 
-### 3. Development Templates
+### Available Services
 
-Pre-configured environment files for different languages:
+- `base` - Base image build
+- `agent3-jax` - JAX development container
+- `tensorboard` - TensorBoard visualization
+- `health-monitor` - Health check monitoring
 
-| Template | Language | Key Features |
-|----------|----------|--------------|
-| `python-ml.env` | Python 3.11 | JAX, Jupyter, TensorBoard |
-| `rust-dev.env` | Rust | ARM64 cross-compilation, Clippy |
-| `go-dev.env` | Go | Modules, ARM64, race detection |
-| `cpp-dev.env` | C++20 | CMake, Clang, sanitizers |
-| `devcontainer.json` | Multi | VS Code Dev Containers |
+[Full Docker Compose Config →](docker-compose.yml)
 
-**Template Usage:**
-```bash
-# Source a template
-source agent3/templates/python-ml.env
-
-# Verify activation
-echo $PROJECT_NAME
-echo $PYTHON_VERSION
-```
-
-### 4. Launch Scripts
-
-#### Main Launch Script: `agent3_launch.sh`
-
-Central orchestration script for all Agent 3 services.
-
-**Commands:**
-- `all/setup` - Complete environment setup
-- `vscode/code` - VS Code Server only
-- `jax` - JAX container only
-- `stop-jax` - Stop JAX container
-- `status` - Environment status
-- `templates` - List templates
-- `help` - Show help
-
-#### Playbook Scripts
-
-Located in `agent3/playbooks/`:
-
-| Script | Purpose | Type |
-|--------|---------|------|
-| `vscode.yml` | VS Code setup | Ansible |
-| `vscode.sh` | VS Code setup | Shell |
-| `jax.yml` | JAX container | Ansible |
-| `jax.sh` | JAX container | Shell |
-
-## Project Structure
-
-```
-SparkTest/
-├── agent3_launch.sh              # Main launch script
-├── agent3/
-│   ├── playbooks/                # Automation playbooks
-│   │   ├── vscode.yml           # VS Code Ansible playbook
-│   │   ├── vscode.sh            # VS Code shell script
-│   │   ├── jax.yml              # JAX Ansible playbook
-│   │   └── jax.sh               # JAX shell script
-│   ├── containers/               # Container configurations
-│   │   ├── jax-arm64.Dockerfile # JAX container image
-│   │   ├── jax-entrypoint.sh    # JAX container entrypoint
-│   │   └── docker-compose.yml   # Docker Compose config
-│   ├── templates/                # Environment templates
-│   │   ├── python-ml.env        # Python ML template
-│   │   ├── rust-dev.env         # Rust template
-│   │   ├── go-dev.env           # Go template
-│   │   ├── cpp-dev.env          # C++ template
-│   │   ├── devcontainer.json    # VS Code Dev Container
-│   │   └── README.md            # Templates documentation
-│   └── scripts/                  # Utility scripts
-└── README.md                     # This file
-```
-
-## Dependencies
-
-### Required
-- **Docker** - Container runtime for JAX environment
-
-### Optional
-- **Ansible** - For playbook-based automation
-- **code-server** - Installed automatically by scripts
-
-### System Requirements
-- OS: Linux (tested on Ubuntu 22.04), macOS (ARM64)
-- RAM: 8GB minimum, 16GB recommended
-- CPU: Multi-core recommended (4+ cores)
-- Disk: 10GB free space
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VSCODE_PORT` | VS Code Server port | `8443` |
-| `VSCODE_PASSWORD` | VS Code password | `changeme123` |
-| `JAX_GPU` | GPU configuration | `all` |
-| `USE_ANSIBLE` | Use Ansible playbooks | `false` |
-
-### Configuration Files
-
-- **VS Code**: `~/.config/code-server/config.yaml`
-- **JAX Container**: `agent3/containers/docker-compose.yml`
-- **Templates**: `agent3/templates/*.env`
-
-## Integration with Other Agents
-
-### Dependencies
-
-- **Agent 1 (SSH)** - Remote access to development environments
-- **Agent 2 (Dashboard)** - Monitoring and status visualization
-
-### Interfaces
-
-Export functions for programmatic access:
+## 🧪 Testing
 
 ```bash
-source agent3_launch.sh
+# Install test dependencies
+pip install -r requirements.txt
 
-# Use exported functions
-start_vscode_server 8443
-launch_jax_container all
-show_status
+# Run all tests
+pytest tests/
+
+# Run specific test suite
+pytest tests/unit/              # Unit tests
+pytest tests/integration/       # Integration tests
+
+# Run with coverage
+pytest tests/ --cov=shared --cov-report=html
+
+# Run specific tests
+pytest tests/unit/test_health_check.py
+pytest tests/integration/test_agent3.py
 ```
 
-## Troubleshooting
+## 🔧 Development
 
-### VS Code Server Issues
+### Adding a New Agent
 
-```bash
-# Check if code-server is installed
-which code-server
+1. **Create agent directory**
+   ```bash
+   mkdir -p agents/agentN_name
+   cd agents/agentN_name
+   ```
 
-# Check if running
-pgrep -f code-server
+2. **Create agent structure**
+   ```bash
+   mkdir -p playbooks containers templates scripts
+   touch README.md
+   ```
 
-# View logs
-journalctl -u code-server -f
+3. **Extend base image**
+   ```dockerfile
+   FROM dgx-spark-base:latest
+   # Agent-specific configuration
+   ```
 
-# Restart
-systemctl restart code-server
-```
+4. **Follow config schema**
+   ```yaml
+   # config.yaml
+   name: "agent-playbook"
+   agent: "agentN"
+   version: "1.0.0"
+   ```
 
-### JAX Container Issues
+5. **Implement health check**
+   ```python
+   from shared import HealthStatus
+   # Return health status
+   ```
 
-```bash
-# Check Docker status
-docker ps -a
+6. **Add to docker-compose.yml**
+   ```yaml
+   agentN-service:
+     build: agents/agentN_name
+     # ...
+   ```
 
-# View container logs
-docker logs jax-dev-environment
+7. **Write tests**
+   ```bash
+   pytest tests/unit/test_agentN.py
+   pytest tests/integration/test_agentN.py
+   ```
 
-# Restart container
-docker restart jax-dev-environment
+### Development Workflow
 
-# Rebuild container
-cd agent3/containers
-docker build -f jax-arm64.Dockerfile -t agent3/jax-arm64:latest .
-```
+1. Fork repository
+2. Create feature branch
+3. Implement changes
+4. Write/update tests
+5. Update documentation
+6. Submit pull request
 
-### Port Conflicts
+[Contributing Guide →](CONTRIBUTING.md)
 
-```bash
-# Check port usage
-lsof -i :8443
-lsof -i :8888
+## 🎯 Roadmap
 
-# Use different ports
-./agent3_launch.sh vscode --port 9000
-export JUPYTER_PORT=9999
-```
+### Phase 1: Foundation (Current)
+- [x] Shared infrastructure
+- [x] Base Docker image
+- [x] Configuration schema
+- [x] Health check API
+- [x] Agent 3 implementation
 
-### Permission Issues
+### Phase 2: Core Agents (Next)
+- [ ] Agent 1: Infrastructure setup
+- [ ] Agent 2: Monitoring dashboard
+- [ ] Agent 4: Compute orchestration
 
-```bash
-# Make scripts executable
-chmod +x agent3_launch.sh
-chmod +x agent3/playbooks/*.sh
-chmod +x agent3/containers/*.sh
-```
+### Phase 3: Advanced Features
+- [ ] Multi-node deployment
+- [ ] Auto-scaling
+- [ ] CI/CD integration
+- [ ] Observability stack
 
-## Development
+### Phase 4: Enterprise Features
+- [ ] RBAC and security
+- [ ] Multi-tenancy
+- [ ] Disaster recovery
+- [ ] Cost optimization
 
-### Adding New Templates
+## 📊 System Requirements
 
-1. Create new template file in `agent3/templates/`
-2. Follow existing template format
-3. Update `agent3/templates/README.md`
-4. Test with `agent3_launch.sh`
+### Minimum
+- CPU: 4 cores
+- RAM: 8GB
+- Disk: 50GB
+- OS: Ubuntu 22.04 / Debian 11
 
-### Modifying Containers
+### Recommended
+- CPU: 16+ cores
+- RAM: 64GB+
+- Disk: 500GB+ NVMe
+- GPU: NVIDIA A100 / H100
+- OS: Ubuntu 22.04 LTS
 
-1. Edit `agent3/containers/jax-arm64.Dockerfile`
-2. Rebuild: `docker build -f jax-arm64.Dockerfile -t agent3/jax-arm64:latest .`
-3. Test: `./agent3_launch.sh jax`
+### Software
+- Docker 20.10+
+- Docker Compose 2.0+
+- NVIDIA Docker runtime
+- Python 3.11+
+- CUDA 12.0+
 
-### Testing
+## 🔐 Security
 
-```bash
-# Test VS Code setup
-./agent3_launch.sh vscode
-curl http://localhost:8443
+- Non-root containers by default
+- Minimal base images
+- Security scanning with Trivy
+- Secret management with Docker secrets
+- Network isolation
+- Read-only root filesystems where applicable
 
-# Test JAX container
-./agent3_launch.sh jax
-docker exec -it jax-dev-environment python -c "import jax; print(jax.__version__)"
+## 📖 Documentation
 
-# Test templates
-source agent3/templates/python-ml.env
-echo $JAX_PLATFORM_NAME
-```
+- [Shared Infrastructure](shared/README.md)
+- [Agent 3: Development Environments](agents/agent3_dev_environments/README.md)
+- [Configuration Schema](shared/config_schema.yaml)
+- [Health Check API](shared/health_check.py)
+- [Contributing Guide](CONTRIBUTING.md)
+- [Testing Guide](tests/README.md)
 
-## Contributing
+## 🤝 Contributing
 
-Contributions welcome! Please:
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
-1. Fork the repository
-2. Create a feature branch
-3. Test your changes
-4. Submit a pull request
+- Code of conduct
+- Development setup
+- Coding standards
+- Pull request process
+- Testing requirements
 
-## License
+## 📝 License
 
-[Your License Here]
+[To be determined]
 
-## Support
+## 💬 Support
 
-For issues and questions:
-- Create an issue in the repository
-- Check existing documentation
-- Review troubleshooting section
+- **Issues**: [GitHub Issues](https://github.com/smlfg/SparkTest/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/smlfg/SparkTest/discussions)
+- **Documentation**: [Project Wiki](https://github.com/smlfg/SparkTest/wiki)
 
-## Changelog
+## 📈 Status
 
-### v1.0.0 (Initial Release)
-- VS Code remote server with Ansible/shell setup
-- JAX ARM64 container with Jupyter integration
-- Development templates for Python, Rust, Go, C++
-- Unified launch script with status monitoring
-- Docker Compose configuration
-- Comprehensive documentation
+| Agent | Status | Coverage | Documentation |
+|-------|--------|----------|---------------|
+| Shared Infrastructure | ✅ Complete | 85% | ✅ Complete |
+| Agent 1: Infrastructure | 📋 Planned | - | 📋 Planned |
+| Agent 2: Dashboard | 📋 Planned | - | 📋 Planned |
+| Agent 3: Dev Environments | ✅ Complete | 90% | ✅ Complete |
+| Agent 4-10 | 📋 Planned | - | 📋 Planned |
 
-## Roadmap
+## 🎉 Acknowledgments
 
-- [ ] GPU optimization for JAX on ARM64
-- [ ] Additional language templates (Java, TypeScript, etc.)
-- [ ] CI/CD integration templates
-- [ ] Remote development over SSH
-- [ ] Multi-node JAX cluster support
-- [ ] Monitoring and metrics dashboard
-- [ ] Automated backups and snapshots
+Built with:
+- NVIDIA PyTorch
+- Docker & Docker Compose
+- Python ecosystem
+- JAX, FastAPI, Pytest
 
 ---
 
-**Agent 3: Development Environments** - Making world-class development environments accessible and easy to deploy.
+**DGX Spark Playbooks** - Enterprise-grade multi-agent infrastructure automation
+
+[Get Started](#-quick-start) • [Documentation](#-documentation) • [Contributing](#-contributing)

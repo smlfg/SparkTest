@@ -1,0 +1,389 @@
+# Unified Configuration Schema for All Agents
+# This schema defines the standard configuration format for all playbooks
+
+schema_version: "1.0.0"
+
+# Playbook Configuration Schema
+playbook_schema:
+  type: object
+  required:
+    - name
+    - agent
+    - version
+  properties:
+    # Basic Information
+    name:
+      type: string
+      description: "Unique name of the playbook"
+      pattern: "^[a-z0-9-]+$"
+      example: "vscode-server"
+
+    agent:
+      type: string
+      description: "Agent identifier (agent1, agent2, etc.)"
+      pattern: "^agent[0-9]+$"
+      example: "agent3"
+
+    version:
+      type: string
+      description: "Semantic version of the playbook"
+      pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+      example: "1.0.0"
+
+    description:
+      type: string
+      description: "Brief description of the playbook"
+      example: "VS Code remote server setup"
+
+    # Dependencies
+    dependencies:
+      type: array
+      description: "List of required agents or services"
+      items:
+        type: string
+      example:
+        - "agent1"
+        - "docker"
+        - "nvidia-docker"
+
+    # Networking
+    ports:
+      type: array
+      description: "List of ports to expose"
+      items:
+        type: integer
+        minimum: 1
+        maximum: 65535
+      example:
+        - 8443
+        - 8888
+        - 6006
+
+    port_mappings:
+      type: object
+      description: "Port mapping with descriptions"
+      patternProperties:
+        "^[0-9]+$":
+          type: object
+          properties:
+            container_port:
+              type: integer
+            protocol:
+              type: string
+              enum: ["tcp", "udp"]
+            description:
+              type: string
+      example:
+        8443:
+          container_port: 8443
+          protocol: "tcp"
+          description: "VS Code Server"
+
+    # Storage
+    volumes:
+      type: array
+      description: "List of volume mounts"
+      items:
+        type: object
+        properties:
+          host_path:
+            type: string
+          container_path:
+            type: string
+          mode:
+            type: string
+            enum: ["ro", "rw"]
+            default: "rw"
+      example:
+        - host_path: "./workspace"
+          container_path: "/workspace"
+          mode: "rw"
+        - host_path: "./config"
+          container_path: "/app/config"
+          mode: "ro"
+
+    # GPU Configuration
+    gpu_required:
+      type: boolean
+      description: "Whether GPU access is required"
+      default: false
+      example: true
+
+    gpu_config:
+      type: object
+      description: "GPU configuration details"
+      properties:
+        count:
+          type: integer
+          description: "Number of GPUs required"
+          minimum: 0
+          default: 0
+        device_ids:
+          type: array
+          description: "Specific GPU device IDs"
+          items:
+            type: integer
+          example: [0, 1]
+        capabilities:
+          type: array
+          description: "GPU capabilities required"
+          items:
+            type: string
+            enum: ["compute", "utility", "graphics"]
+          default: ["compute", "utility"]
+        memory_fraction:
+          type: number
+          description: "Fraction of GPU memory to use (0.0-1.0)"
+          minimum: 0.0
+          maximum: 1.0
+          default: 1.0
+
+    # Resources
+    resources:
+      type: object
+      description: "Resource limits and reservations"
+      properties:
+        cpu:
+          type: object
+          properties:
+            limit:
+              type: string
+              example: "4.0"
+            reservation:
+              type: string
+              example: "2.0"
+        memory:
+          type: object
+          properties:
+            limit:
+              type: string
+              example: "16G"
+            reservation:
+              type: string
+              example: "8G"
+
+    # Environment Variables
+    environment:
+      type: object
+      description: "Environment variables"
+      patternProperties:
+        "^[A-Z_][A-Z0-9_]*$":
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+      example:
+        PYTHON_VERSION: "3.11"
+        DEBUG: false
+        MAX_WORKERS: 8
+
+    # Health Check
+    health_check:
+      type: object
+      description: "Health check configuration"
+      properties:
+        enabled:
+          type: boolean
+          default: true
+        endpoint:
+          type: string
+          description: "Health check endpoint path"
+          example: "/health"
+        port:
+          type: integer
+          description: "Port to check"
+          example: 8000
+        interval:
+          type: integer
+          description: "Check interval in seconds"
+          default: 30
+        timeout:
+          type: integer
+          description: "Check timeout in seconds"
+          default: 10
+        retries:
+          type: integer
+          description: "Number of retries before unhealthy"
+          default: 3
+        start_period:
+          type: integer
+          description: "Grace period before checks start"
+          default: 5
+
+    # Commands
+    commands:
+      type: object
+      description: "Lifecycle commands"
+      properties:
+        pre_start:
+          type: array
+          description: "Commands to run before starting service"
+          items:
+            type: string
+          example:
+            - "mkdir -p /app/logs"
+            - "chmod 755 /app/scripts"
+        start:
+          type: string
+          description: "Main start command"
+          example: "uvicorn main:app --host 0.0.0.0 --port 8000"
+        post_start:
+          type: array
+          description: "Commands to run after starting service"
+          items:
+            type: string
+        pre_stop:
+          type: array
+          description: "Commands to run before stopping service"
+          items:
+            type: string
+        stop:
+          type: string
+          description: "Stop command (if not default)"
+
+    # Monitoring
+    monitoring:
+      type: object
+      description: "Monitoring and metrics configuration"
+      properties:
+        enabled:
+          type: boolean
+          default: true
+        metrics_port:
+          type: integer
+          default: 9090
+          description: "Prometheus metrics port"
+        logging_level:
+          type: string
+          enum: ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+          default: "INFO"
+        log_format:
+          type: string
+          enum: ["json", "text"]
+          default: "json"
+
+    # Security
+    security:
+      type: object
+      description: "Security configuration"
+      properties:
+        user:
+          type: string
+          description: "User to run as"
+          default: "agent"
+        privileged:
+          type: boolean
+          description: "Run in privileged mode"
+          default: false
+        capabilities_add:
+          type: array
+          description: "Linux capabilities to add"
+          items:
+            type: string
+          example: ["SYS_PTRACE"]
+        capabilities_drop:
+          type: array
+          description: "Linux capabilities to drop"
+          items:
+            type: string
+          example: ["ALL"]
+        read_only:
+          type: boolean
+          description: "Mount root filesystem as read-only"
+          default: false
+
+    # Metadata
+    metadata:
+      type: object
+      description: "Additional metadata"
+      properties:
+        author:
+          type: string
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["ml", "development", "gpu"]
+        documentation:
+          type: string
+          description: "URL to documentation"
+
+# Example Complete Configuration
+example_config:
+  name: "jax-environment"
+  agent: "agent3"
+  version: "1.0.0"
+  description: "JAX development environment with GPU support"
+
+  dependencies:
+    - "agent1"
+    - "docker"
+    - "nvidia-docker"
+
+  ports:
+    - 8888
+    - 6006
+
+  port_mappings:
+    8888:
+      container_port: 8888
+      protocol: "tcp"
+      description: "Jupyter Lab"
+    6006:
+      container_port: 6006
+      protocol: "tcp"
+      description: "TensorBoard"
+
+  volumes:
+    - host_path: "./workspace"
+      container_path: "/workspace"
+      mode: "rw"
+    - host_path: "./notebooks"
+      container_path: "/workspace/notebooks"
+      mode: "rw"
+
+  gpu_required: true
+  gpu_config:
+    count: 1
+    capabilities: ["compute", "utility"]
+    memory_fraction: 0.8
+
+  resources:
+    cpu:
+      limit: "8.0"
+      reservation: "4.0"
+    memory:
+      limit: "32G"
+      reservation: "16G"
+
+  environment:
+    JAX_PLATFORM_NAME: "gpu"
+    JUPYTER_TOKEN: "jaxdev123"
+    XLA_FLAGS: "--xla_gpu_cuda_data_dir=/usr/local/cuda"
+
+  health_check:
+    enabled: true
+    endpoint: "/api/health"
+    port: 8888
+    interval: 30
+    timeout: 10
+    retries: 3
+
+  commands:
+    start: "jupyter lab --ip=0.0.0.0 --port=8888 --no-browser"
+
+  monitoring:
+    enabled: true
+    metrics_port: 9090
+    logging_level: "INFO"
+    log_format: "json"
+
+  metadata:
+    author: "Agent3 Team"
+    tags: ["ml", "jax", "jupyter", "gpu"]

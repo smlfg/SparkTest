@@ -1,0 +1,161 @@
+version: '3.8'
+
+# DGX Spark Playbooks - Root Docker Compose Configuration
+# Orchestrates all agent services
+
+services:
+  # Shared base image build (used by all agents)
+  base:
+    build:
+      context: .
+      dockerfile: shared/base.Dockerfile
+    image: dgx-spark-base:latest
+    container_name: dgx-spark-base
+    command: ["echo", "Base image built successfully"]
+
+  # Agent 3: Development Environments - JAX Container
+  agent3-jax:
+    build:
+      context: agents/agent3_dev_environments/containers
+      dockerfile: jax-arm64.Dockerfile
+    image: agent3/jax-arm64:latest
+    container_name: agent3-jax-dev
+    hostname: jax-dev
+
+    depends_on:
+      - base
+
+    # GPU Configuration
+    # Uncomment for GPU support
+    # runtime: nvidia
+    # environment:
+    #   - NVIDIA_VISIBLE_DEVICES=all
+    #   - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+    environment:
+      - JAX_PLATFORM_NAME=cpu
+      - XLA_FLAGS=--xla_force_host_platform_device_count=8
+      - JAX_ENABLE_X64=True
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=jaxdev123
+
+    volumes:
+      - ./agents/agent3_dev_environments/containers/workspace:/workspace
+      - ./agents/agent3_dev_environments/containers/notebooks:/workspace/notebooks
+      - ./shared:/app/shared:ro
+      - agent3-cache:/home/jaxuser/.cache
+
+    ports:
+      - "8888:8888"  # Jupyter Lab
+      - "6006:6006"  # TensorBoard
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 16G
+        reservations:
+          cpus: '4'
+          memory: 8G
+
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:8888/api')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    restart: unless-stopped
+
+    networks:
+      - agent-network
+
+  # Agent 3: VS Code Server
+  # Note: VS Code Server typically runs on host, not in container
+  # This is a placeholder for future containerized version
+
+  # TensorBoard Service (shared across agents)
+  tensorboard:
+    image: tensorflow/tensorflow:latest
+    container_name: shared-tensorboard
+    ports:
+      - "6007:6006"
+    volumes:
+      - ./agents/agent3_dev_environments/containers/logs:/logs
+      - ./shared/logs:/shared-logs:ro
+    command: tensorboard --logdir=/logs --host=0.0.0.0 --port=6006
+    restart: unless-stopped
+    networks:
+      - agent-network
+
+  # Health Check Service (monitors all agents)
+  health-monitor:
+    build:
+      context: .
+      dockerfile: shared/base.Dockerfile
+    image: dgx-spark-base:latest
+    container_name: health-monitor
+    volumes:
+      - ./shared:/app/shared:ro
+    command: >
+      bash -c "
+      while true; do
+        python /app/shared/health_check.py 8888 --endpoint /api --json || true;
+        sleep 30;
+      done
+      "
+    depends_on:
+      - agent3-jax
+    networks:
+      - agent-network
+
+  # Placeholder services for future agents
+
+  # agent1-infra:
+  #   # Infrastructure agent
+  #   build:
+  #     context: agents/agent1_infra
+  #   image: agent1/infra:latest
+  #   container_name: agent1-infra
+  #   networks:
+  #     - agent-network
+
+  # agent2-dashboard:
+  #   # Dashboard agent
+  #   build:
+  #     context: agents/agent2_dashboard
+  #   image: agent2/dashboard:latest
+  #   container_name: agent2-dashboard
+  #   ports:
+  #     - "9000:9000"
+  #   networks:
+  #     - agent-network
+
+# Named volumes
+volumes:
+  agent3-cache:
+    driver: local
+  shared-logs:
+    driver: local
+
+# Networks
+networks:
+  agent-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Configuration for future extensions
+x-shared-config: &shared-config
+  networks:
+    - agent-network
+  restart: unless-stopped
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
