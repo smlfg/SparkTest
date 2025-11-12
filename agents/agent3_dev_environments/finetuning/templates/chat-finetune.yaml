@@ -1,0 +1,77 @@
+# Chat Fine-tuning Template for Students
+# Pre-configured for Llama-3.1-8B with LoRA
+# Optimized for conversational AI and chat applications
+
+### Model Configuration
+model_name_or_path: meta-llama/Llama-3.1-8B-Instruct
+# Alternative models:
+# - meta-llama/Llama-2-7b-chat-hf
+# - mistralai/Mistral-7B-Instruct-v0.2
+
+### Training Stage
+stage: sft  # Supervised Fine-tuning
+do_train: true
+
+### LoRA Configuration
+finetuning_type: lora
+lora_target: all  # Apply LoRA to all linear layers
+lora_rank: 8      # LoRA rank (r) - balance between performance and efficiency
+lora_alpha: 16    # LoRA alpha - typically 2x rank
+lora_dropout: 0.05
+
+### Training Hyperparameters
+learning_rate: 2.0e-4
+num_train_epochs: 3
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 8
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+warmup_steps: 100
+
+### Optimization
+bf16: true  # Use bfloat16 for faster training on modern GPUs
+fp16: false # Set to true if bf16 not supported
+optim: adamw_torch
+weight_decay: 0.01
+max_grad_norm: 1.0
+
+### Dataset Configuration
+dataset: student_chat  # Dataset must be prepared in /app/data/
+# Format: Alpaca-style JSON
+# [{"instruction": "...", "input": "...", "output": "..."}]
+
+dataset_dir: /app/data
+template: llama3  # Chat template for Llama-3
+
+### Output Configuration
+output_dir: /app/output/student-chat-model
+logging_steps: 10
+save_steps: 500
+save_total_limit: 3
+evaluation_strategy: steps
+eval_steps: 500
+
+### Advanced Settings
+max_length: 2048  # Maximum sequence length
+max_samples: null # Use all samples (set number to limit)
+overwrite_output_dir: true
+report_to: tensorboard
+
+### Validation
+val_size: 0.1  # 10% of data for validation
+
+### Generation Settings (for evaluation)
+do_eval: true
+predict_with_generate: true
+
+### Memory Optimization
+gradient_checkpointing: true  # Reduce memory usage
+
+### Logging
+logging_dir: /app/output/student-chat-model/logs
+
+# Usage:
+# 1. Prepare your dataset in /app/data/student_chat.json
+# 2. Run: llamafactory-cli train templates/chat-finetune.yaml
+# 3. Monitor: http://localhost:7860 or TensorBoard
+# 4. Output: /app/output/student-chat-model/

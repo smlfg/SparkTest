@@ -1,0 +1,107 @@
+# Code Assistant Fine-tuning Template for Students
+# Pre-configured for CodeLlama-13B with LoRA
+# Optimized for code generation and programming assistance
+
+### Model Configuration
+model_name_or_path: codellama/CodeLlama-13b-Instruct-hf
+# Alternative models:
+# - codellama/CodeLlama-7b-Instruct-hf  (smaller, faster)
+# - codellama/CodeLlama-34b-Instruct-hf (larger, better)
+# - Phind/Phind-CodeLlama-34B-v2
+
+### Training Stage
+stage: sft  # Supervised Fine-tuning
+do_train: true
+
+### LoRA Configuration
+finetuning_type: lora
+lora_target: all  # Apply LoRA to all linear layers
+lora_rank: 16     # Higher rank for code understanding
+lora_alpha: 32
+lora_dropout: 0.05
+
+### Training Hyperparameters
+learning_rate: 1.0e-4  # Moderate learning rate for code
+num_train_epochs: 3
+per_device_train_batch_size: 1  # Lower batch size for 13B model
+gradient_accumulation_steps: 16  # Accumulate to effective batch of 16
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+warmup_steps: 100
+
+### Optimization
+bf16: true  # Use bfloat16 for faster training
+fp16: false
+optim: adamw_torch
+weight_decay: 0.01
+max_grad_norm: 1.0
+
+### Dataset Configuration
+dataset: student_code  # Dataset in /app/data/
+# Format: [{"instruction": "Write a function to...", "input": "", "output": "def ..."}]
+
+dataset_dir: /app/data
+template: llama2  # CodeLlama uses Llama-2 template
+
+### Output Configuration
+output_dir: /app/output/student-code-assistant
+logging_steps: 10
+save_steps: 500
+save_total_limit: 3
+evaluation_strategy: steps
+eval_steps: 500
+
+### Advanced Settings
+max_length: 4096  # Longer sequences for code
+max_samples: null
+overwrite_output_dir: true
+report_to: tensorboard
+
+### Validation
+val_size: 0.1
+
+### Evaluation
+do_eval: true
+predict_with_generate: true
+
+### Memory Optimization
+gradient_checkpointing: true  # Essential for 13B model
+use_cache: false  # Disable KV cache during training
+
+### Logging
+logging_dir: /app/output/student-code-assistant/logs
+
+### Code-specific Settings
+# Temperature for code generation (lower = more deterministic)
+temperature: 0.1
+top_p: 0.95
+top_k: 50
+
+# Usage:
+# 1. Prepare code dataset in /app/data/student_code.json
+# 2. Format examples:
+#    - Function generation: {"instruction": "Write a Python function to sort a list", "output": "def sort_list(lst):\n    return sorted(lst)"}
+#    - Bug fixing: {"instruction": "Fix this code", "input": "buggy code", "output": "fixed code"}
+#    - Code explanation: {"instruction": "Explain this code", "input": "code snippet", "output": "explanation"}
+# 3. Run: llamafactory-cli train templates/code-assistant.yaml
+# 4. Monitor: http://localhost:7860
+# 5. Output: /app/output/student-code-assistant/
+
+# Example dataset format:
+# [
+#   {
+#     "instruction": "Write a Python function to calculate factorial",
+#     "input": "",
+#     "output": "def factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n - 1)"
+#   },
+#   {
+#     "instruction": "Fix the bug in this code",
+#     "input": "def add(a, b):\n    return a + c",
+#     "output": "def add(a, b):\n    return a + b"
+#   },
+#   {
+#     "instruction": "Convert this function to use list comprehension",
+#     "input": "def squares(n):\n    result = []\n    for i in range(n):\n        result.append(i**2)\n    return result",
+#     "output": "def squares(n):\n    return [i**2 for i in range(n)]"
+#   }
+# ]

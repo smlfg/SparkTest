@@ -1,0 +1,107 @@
+[
+  {
+    "instruction": "Classify the sentiment of the following text",
+    "input": "I absolutely love this product! Best purchase ever!",
+    "output": "positive"
+  },
+  {
+    "instruction": "Classify the sentiment of the following text",
+    "input": "Terrible service. Very disappointed with the quality.",
+    "output": "negative"
+  },
+  {
+    "instruction": "Classify the sentiment of the following text",
+    "input": "It's okay, nothing special but does the job.",
+    "output": "neutral"
+  },
+  {
+    "instruction": "Classify the sentiment of the following text",
+    "input": "Amazing experience! Highly recommend to everyone!",
+    "output": "positive"
+  },
+  {
+    "instruction": "Classify the sentiment of the following text",
+    "input": "Worst customer support I've ever encountered.",
+    "output": "negative"
+  },
+  {
+    "instruction": "Classify the sentiment of the following text",
+    "input": "The product arrived on time. Works as described.",
+    "output": "neutral"
+  },
+  {
+    "instruction": "Classify the sentiment of the following text",
+    "input": "This changed my life! Cannot thank you enough!",
+    "output": "positive"
+  },
+  {
+    "instruction": "Classify the sentiment of the following text",
+    "input": "Complete waste of money. Doesn't work at all.",
+    "output": "negative"
+  },
+  {
+    "instruction": "Classify the sentiment of the following text",
+    "input": "Pretty standard. Met my basic expectations.",
+    "output": "neutral"
+  },
+  {
+    "instruction": "Classify the sentiment of the following text",
+    "input": "Exceeded all my expectations! Five stars!",
+    "output": "positive"
+  },
+  {
+    "instruction": "Classify the programming language",
+    "input": "def hello_world():\n    print('Hello, World!')",
+    "output": "Python"
+  },
+  {
+    "instruction": "Classify the programming language",
+    "input": "function helloWorld() {\n    console.log('Hello, World!');\n}",
+    "output": "JavaScript"
+  },
+  {
+    "instruction": "Classify the programming language",
+    "input": "public class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, World!\");\n    }\n}",
+    "output": "Java"
+  },
+  {
+    "instruction": "Classify the text category",
+    "input": "Scientists discover new species of deep-sea fish in the Mariana Trench.",
+    "output": "science"
+  },
+  {
+    "instruction": "Classify the text category",
+    "input": "Local team wins championship in overtime thriller.",
+    "output": "sports"
+  },
+  {
+    "instruction": "Classify the text category",
+    "input": "Stock market reaches new highs as tech sector rallies.",
+    "output": "business"
+  },
+  {
+    "instruction": "Classify the text category",
+    "input": "New smartphone features AI-powered camera and 5G connectivity.",
+    "output": "technology"
+  },
+  {
+    "instruction": "Classify the text category",
+    "input": "Renowned artist's paintings to be exhibited at national museum.",
+    "output": "arts"
+  },
+  {
+    "instruction": "Classify the urgency level",
+    "input": "Server is down and customers cannot access the website.",
+    "output": "critical"
+  },
+  {
+    "instruction": "Classify the urgency level",
+    "input": "Feature request: Add dark mode to the application.",
+    "output": "low"
+  },
+  {
+    "instruction": "Classify the urgency level",
+    "input": "Bug: Login button sometimes doesn't respond on first click.",
+    "output": "medium"
+  }
+]

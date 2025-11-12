@@ -73,6 +73,92 @@ services:
     networks:
       - agent-network
 
+  # Agent 3: LLaMA Factory Fine-tuning
+  llama-factory:
+    image: hiyouga/llama-factory:latest
+    container_name: agent3-llama-factory
+    hostname: llama-factory
+
+    # GPU Configuration (required for fine-tuning)
+    runtime: nvidia
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - GRADIO_SERVER_NAME=0.0.0.0
+      - GRADIO_SERVER_PORT=7860
+
+    volumes:
+      - ./agents/agent3_dev_environments/finetuning/datasets:/app/data
+      - ./agents/agent3_dev_environments/finetuning/models:/app/models
+      - ./agents/agent3_dev_environments/finetuning/checkpoints:/app/output
+      - ./agents/agent3_dev_environments/finetuning/templates:/app/templates:ro
+      - ./shared:/app/shared:ro
+
+    ports:
+      - "7860:7860"  # LLaMA Factory WebUI
+
+    # Resource allocation for fine-tuning
+    deploy:
+      resources:
+        limits:
+          cpus: '16'
+          memory: 64G
+        reservations:
+          cpus: '8'
+          memory: 32G
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    restart: unless-stopped
+
+    networks:
+      - agent-network
+
+  # Agent 3: Training Monitor API
+  training-monitor:
+    build:
+      context: agents/agent3_dev_environments/finetuning
+      dockerfile: Dockerfile.monitor
+    image: agent3/training-monitor:latest
+    container_name: agent3-training-monitor
+    hostname: training-monitor
+
+    depends_on:
+      - llama-factory
+
+    environment:
+      - LLAMA_FACTORY_HOST=llama-factory
+      - MONITOR_PORT=8000
+
+    volumes:
+      - ./agents/agent3_dev_environments/finetuning/checkpoints:/app/output:ro
+      - ./agents/agent3_dev_environments/finetuning/api:/app/api
+      - ./shared:/app/shared:ro
+
+    ports:
+      - "8001:8000"  # Training Monitor API
+
+    command: uvicorn api.training_monitor:app --host 0.0.0.0 --port 8000
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    restart: unless-stopped
+
+    networks:
+      - agent-network
+
   # Agent 3: VS Code Server
   # Note: VS Code Server typically runs on host, not in container
   # This is a placeholder for future containerized version

@@ -1,0 +1,90 @@
+# Classification Fine-tuning Template for Students
+# Pre-configured for Mistral-7B with LoRA
+# Optimized for text classification tasks
+
+### Model Configuration
+model_name_or_path: mistralai/Mistral-7B-Instruct-v0.2
+# Alternative models:
+# - meta-llama/Llama-3.1-8B
+# - google/gemma-7b
+
+### Training Stage
+stage: sft  # Supervised Fine-tuning for classification
+do_train: true
+
+### LoRA Configuration
+finetuning_type: lora
+lora_target: all  # Apply LoRA to all linear layers
+lora_rank: 16     # Higher rank for classification tasks
+lora_alpha: 32    # Alpha = 2 * rank
+lora_dropout: 0.1
+
+### Training Hyperparameters
+learning_rate: 5.0e-5  # Lower learning rate for classification
+num_train_epochs: 5    # More epochs for classification
+per_device_train_batch_size: 4
+gradient_accumulation_steps: 4
+lr_scheduler_type: linear
+warmup_ratio: 0.05
+warmup_steps: 50
+
+### Optimization
+bf16: true  # Use bfloat16 for faster training
+fp16: false
+optim: adamw_torch
+weight_decay: 0.01
+max_grad_norm: 1.0
+
+### Dataset Configuration
+dataset: student_classification  # Dataset in /app/data/
+# Format: [{"instruction": "Classify:", "input": "text", "output": "label"}]
+
+dataset_dir: /app/data
+template: mistral  # Chat template for Mistral
+
+### Output Configuration
+output_dir: /app/output/student-classification-model
+logging_steps: 5
+save_steps: 200
+save_total_limit: 3
+evaluation_strategy: steps
+eval_steps: 200
+
+### Advanced Settings
+max_length: 512   # Shorter for classification
+max_samples: null
+overwrite_output_dir: true
+report_to: tensorboard
+
+### Validation
+val_size: 0.15  # 15% for validation
+
+### Evaluation
+do_eval: true
+predict_with_generate: true
+metric_for_best_model: accuracy
+
+### Memory Optimization
+gradient_checkpointing: true
+
+### Logging
+logging_dir: /app/output/student-classification-model/logs
+
+### Classification-specific Settings
+# For multi-class classification
+num_labels: null  # Auto-detect from dataset
+# Common values: 2 (binary), 3, 5, 10, etc.
+
+# Usage:
+# 1. Prepare classification dataset in /app/data/student_classification.json
+# 2. Format: [{"instruction": "Classify the sentiment", "input": "I love this!", "output": "positive"}]
+# 3. Run: llamafactory-cli train templates/classification.yaml
+# 4. Monitor: http://localhost:7860
+# 5. Output: /app/output/student-classification-model/
+
+# Example dataset format for sentiment classification:
+# [
+#   {"instruction": "Classify sentiment", "input": "Great product!", "output": "positive"},
+#   {"instruction": "Classify sentiment", "input": "Terrible service", "output": "negative"},
+#   {"instruction": "Classify sentiment", "input": "It's okay", "output": "neutral"}
+# ]

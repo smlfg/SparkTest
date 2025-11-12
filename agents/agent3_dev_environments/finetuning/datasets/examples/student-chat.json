@@ -1,0 +1,42 @@
+[
+  {
+    "instruction": "Erkläre maschinelles Lernen in einfachen Worten",
+    "input": "",
+    "output": "Maschinelles Lernen ist wenn Computer aus Beispielen lernen, ähnlich wie Menschen aus Erfahrung lernen. Statt dass wir dem Computer jeden Schritt genau vorschreiben, zeigen wir ihm viele Beispiele und er findet selbst Muster. Zum Beispiel: Wenn wir ihm tausende Bilder von Katzen und Hunden zeigen und sagen welches welches ist, kann er lernen den Unterschied zu erkennen und neue Bilder richtig zuordnen."
+  },
+  {
+    "instruction": "Übersetze ins Englische",
+    "input": "Guten Morgen",
+    "output": "Good morning"
+  },
+  {
+    "instruction": "Was ist der Unterschied zwischen einer Liste und einem Tuple in Python?",
+    "input": "",
+    "output": "Der Hauptunterschied ist, dass Listen veränderbar (mutable) sind und Tuples unveränderbar (immutable). Das bedeutet:\n\n- Listen (list): Du kannst Elemente hinzufügen, entfernen oder ändern nach der Erstellung. Syntax: [1, 2, 3]\n- Tuples (tuple): Nach der Erstellung können keine Änderungen mehr vorgenommen werden. Syntax: (1, 2, 3)\n\nTuples sind etwas schneller und verbrauchen weniger Speicher, während Listen flexibler sind für dynamische Daten."
+  },
+  {
+    "instruction": "Fasse den Text zusammen",
+    "input": "Künstliche Intelligenz hat in den letzten Jahren enorme Fortschritte gemacht. Von selbstfahrenden Autos über Sprachassistenten bis hin zu medizinischen Diagnose-Systemen - KI verändert viele Bereiche unseres Lebens. Besonders Deep Learning, eine Unterart des maschinellen Lernens, hat zu Durchbrüchen in der Bild- und Spracherkennung geführt.",
+    "output": "KI hat große Fortschritte in verschiedenen Bereichen gemacht (selbstfahrende Autos, Sprachassistenten, Medizin). Deep Learning als Teil des maschinellen Lernens ermöglicht besonders bei Bild- und Spracherkennung bedeutende Durchbrüche."
+  },
+  {
+    "instruction": "Erkläre was ein API ist",
+    "input": "",
+    "output": "Ein API (Application Programming Interface) ist eine Schnittstelle, die es verschiedenen Software-Programmen ermöglicht miteinander zu kommunizieren. Man kann es sich wie eine Speisekarte in einem Restaurant vorstellen: Die Speisekarte zeigt dir was verfügbar ist (welche Funktionen du nutzen kannst), du bestellst etwas (rufst eine Funktion auf), und die Küche (das andere Programm) liefert dir das Ergebnis. APIs machen es möglich, dass Apps und Dienste zusammenarbeiten, ohne dass du wissen musst, wie sie intern funktionieren."
+  },
+  {
+    "instruction": "Schreibe eine höfliche Absage für eine Jobbewerbung",
+    "input": "",
+    "output": "Sehr geehrte/r [Name],\n\nvielen Dank für Ihr Interesse an der Position als [Positionsbezeichnung] und die Zeit, die Sie in Ihre Bewerbung investiert haben.\n\nNach sorgfältiger Prüfung aller Bewerbungen müssen wir Ihnen leider mitteilen, dass wir uns für einen anderen Kandidaten entschieden haben, dessen Profil noch etwas besser zu den aktuellen Anforderungen passt.\n\nWir schätzen Ihr Interesse an unserem Unternehmen sehr und würden uns freuen, von Ihnen bei zukünftigen Gelegenheiten wieder zu hören.\n\nWir wünschen Ihnen für Ihre weitere berufliche Zukunft alles Gute.\n\nMit freundlichen Grüßen,\n[Ihr Name]"
+  },
+  {
+    "instruction": "Was bedeutet 'overfitting' beim maschinellen Lernen?",
+    "input": "",
+    "output": "Overfitting (Überanpassung) tritt auf, wenn ein Machine-Learning-Modell die Trainingsdaten zu genau lernt - inklusive Rauschen und Zufälligkeiten. Das Modell funktioniert dann sehr gut auf den Trainingsdaten, aber schlecht auf neuen, ungesehenen Daten.\n\nBeispiel: Ein Schüler der alle Prüfungsfragen auswendig lernt, aber das Prinzip nicht versteht - er würde bei leicht veränderten Fragen scheitern.\n\nGegenmittel:\n- Mehr Trainingsdaten\n- Regularisierung\n- Validation Set nutzen\n- Modell-Komplexität reduzieren"
+  },
+  {
+    "instruction": "Generiere eine kreative Produktbeschreibung",
+    "input": "Smartwatch mit Fitness-Tracking",
+    "output": "Entdecke deinen persönlichen Gesundheits-Coach am Handgelenk! Diese innovative Smartwatch ist mehr als nur eine Uhr - sie ist dein 24/7 Fitness-Begleiter. Mit präzisem Herzfrequenz-Monitoring, intelligenter Schlafanalyse und über 50 Sport-Modi unterstützt sie dich bei jedem Schritt zu einem gesünderen Lebensstil. Das kristallklare AMOLED-Display zeigt nicht nur die Zeit, sondern auch deine Fortschritte, Benachrichtigungen und motivierende Statistiken. Wasserdicht, stilvoll und mit 7 Tagen Akkulaufzeit - perfekt für alle, die das Beste aus jedem Tag herausholen wollen."
+  }
+]
