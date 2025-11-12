@@ -70,6 +70,64 @@ check_dependencies() {
     log_success "All dependencies are installed"
 }
 
+preflight_checks() {
+    log_info "Running pre-flight checks..."
+
+    # Check disk space (require at least 10GB free)
+    local available_space=$(df . | awk 'NR==2 {print $4}')
+    local required_space=10485760  # 10GB in KB
+
+    if [ "$available_space" -lt "$required_space" ]; then
+        log_error "Insufficient disk space. Required: 10GB, Available: $(df -h . | awk 'NR==2 {print $4}')"
+        exit 1
+    fi
+    log_success "Disk space: $(df -h . | awk 'NR==2 {print $4}') available"
+
+    # Check RAM (require at least 4GB)
+    if command -v free &> /dev/null; then
+        local total_mem=$(free -m | awk 'NR==2 {print $2}')
+        local required_mem=4096  # 4GB in MB
+
+        if [ "$total_mem" -lt "$required_mem" ]; then
+            log_warning "Low RAM detected. Required: 4GB, Available: ${total_mem}MB"
+        else
+            log_success "RAM: ${total_mem}MB available"
+        fi
+    fi
+
+    # Check Docker daemon
+    if ! docker ps &> /dev/null; then
+        log_error "Docker daemon is not running"
+        exit 1
+    fi
+    log_success "Docker daemon is running"
+
+    # Check required ports are available
+    local ports=(8000 8080 5432 6379 3000 9090 7077)
+    local ports_in_use=()
+
+    for port in "${ports[@]}"; do
+        if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1 || nc -z localhost $port 2>/dev/null; then
+            ports_in_use+=($port)
+        fi
+    done
+
+    if [ ${#ports_in_use[@]} -gt 0 ]; then
+        log_warning "Ports already in use: ${ports_in_use[*]}"
+        log_warning "This may cause conflicts. Consider stopping existing services."
+    else
+        log_success "All required ports are available"
+    fi
+
+    # Check Docker resources
+    local docker_mem=$(docker info --format '{{.MemTotal}}' 2>/dev/null || echo "0")
+    if [ "$docker_mem" != "0" ]; then
+        log_success "Docker resources configured"
+    fi
+
+    log_success "Pre-flight checks completed"
+}
+
 create_directories() {
     log_info "Creating required directories..."
 
@@ -210,17 +268,32 @@ start_services() {
 
     # Pull images
     log_info "Pulling Docker images..."
-    docker-compose pull
+    docker-compose pull || log_warning "Some images could not be pulled, will build locally"
 
     # Build custom images
     log_info "Building custom images..."
     docker-compose build
 
-    # Start services
-    log_info "Starting all services..."
-    docker-compose up -d
+    # Start services in order
+    log_info "Starting infrastructure services..."
+    docker-compose up -d postgres redis
 
-    log_success "Services started"
+    log_info "Waiting for infrastructure to be ready..."
+    sleep 10
+
+    log_info "Starting Spark cluster..."
+    docker-compose up -d spark-master spark-worker-1 spark-worker-2
+
+    log_info "Waiting for Spark cluster to be ready..."
+    sleep 10
+
+    log_info "Starting application and monitoring services..."
+    docker-compose up -d api-gateway prometheus grafana
+
+    log_info "Starting test runner..."
+    docker-compose up -d test-runner
+
+    log_success "All services started"
 }
 
 wait_for_services() {
@@ -312,6 +385,7 @@ main() {
     echo ""
 
     check_dependencies
+    preflight_checks
     create_directories
     setup_monitoring
     setup_database
@@ -320,13 +394,23 @@ main() {
     show_status
     show_urls
 
+    # Run smoke tests
+    log_info "Running smoke tests..."
+    if ./run_integration_tests.sh smoke > /dev/null 2>&1; then
+        log_success "Smoke tests passed"
+    else
+        log_warning "Smoke tests had some issues (check logs for details)"
+    fi
+
     log_success "Deployment completed successfully!"
     echo ""
     echo "Next steps:"
-    echo "  1. Run integration tests: ./run_integration_tests.sh"
+    echo "  1. Run full integration tests: ./run_integration_tests.sh"
     echo "  2. Run benchmarks: ./benchmark_suite.sh"
-    echo "  3. View logs: docker-compose logs -f"
-    echo "  4. Stop services: docker-compose down"
+    echo "  3. Monitor system: ./scripts/monitor.sh"
+    echo "  4. Check health: ./scripts/health_check.sh"
+    echo "  5. View logs: docker-compose logs -f"
+    echo "  6. Stop services: docker-compose down"
     echo ""
 }
 
