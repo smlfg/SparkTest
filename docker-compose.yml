@@ -90,7 +90,7 @@ services:
       - ./agents/agent3_dev_environments/finetuning/datasets:/app/data
       - ./agents/agent3_dev_environments/finetuning/models:/app/models
       - ./agents/agent3_dev_environments/finetuning/checkpoints:/app/output
-      - ./agents/agent3_dev_environments/finetuning/templates:/app/templates:ro
+      - ./agents/agent3_dev_environments/finetuning/configs/student-templates:/app/templates:ro
       - ./shared:/app/shared:ro
 
     ports:

@@ -6,7 +6,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FINETUNING_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-TEMPLATES_DIR="$FINETUNING_DIR/templates"
+TEMPLATES_DIR="$FINETUNING_DIR/configs/student-templates"
 DATASETS_DIR="$FINETUNING_DIR/datasets"
 
 # Colors

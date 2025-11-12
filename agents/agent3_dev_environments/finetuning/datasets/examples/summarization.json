@@ -1,0 +1,27 @@
+[
+  {
+    "instruction": "Summarize the following text",
+    "input": "Artificial intelligence is transforming healthcare through applications in diagnostics, drug discovery, and personalized treatment plans. Machine learning algorithms can analyze medical images faster and more accurately than human radiologists in some cases. AI-powered systems help researchers identify potential drug candidates by analyzing molecular structures and predicting their effectiveness. Additionally, AI enables personalized medicine by analyzing patient data to recommend tailored treatment approaches based on individual genetic profiles and health history.",
+    "output": "AI is revolutionizing healthcare through improved diagnostics, accelerated drug discovery, and personalized treatment recommendations based on patient-specific data."
+  },
+  {
+    "instruction": "Summarize the following text",
+    "input": "Climate change is one of the most pressing challenges facing humanity. Rising global temperatures are causing polar ice caps to melt, leading to sea level rise that threatens coastal communities worldwide. Extreme weather events such as hurricanes, droughts, and floods are becoming more frequent and severe. Scientists warn that without significant reductions in greenhouse gas emissions, these trends will accelerate, potentially leading to irreversible damage to ecosystems and human societies.",
+    "output": "Climate change threatens humanity through melting ice caps, rising sea levels, and increasingly severe weather events, requiring urgent emission reductions to prevent irreversible damage."
+  },
+  {
+    "instruction": "Summarize the following text",
+    "input": "The Internet of Things (IoT) refers to the network of physical devices embedded with sensors, software, and connectivity that enables them to collect and exchange data. Smart home devices like thermostats, security cameras, and voice assistants are common examples. In industry, IoT sensors monitor equipment performance, predict maintenance needs, and optimize production processes. However, the proliferation of IoT devices also raises concerns about data privacy and cybersecurity.",
+    "output": "IoT connects physical devices with sensors to collect and share data, enabling smart homes and industrial optimization, but raising privacy and security concerns."
+  },
+  {
+    "instruction": "Summarize the following article",
+    "input": "Recent advances in quantum computing have brought us closer to solving complex problems that are intractable for classical computers. Quantum computers leverage quantum mechanical phenomena like superposition and entanglement to perform calculations. Major tech companies and research institutions are racing to develop quantum computers with sufficient qubits and error correction to achieve quantum advantage. Potential applications include cryptography, drug discovery, financial modeling, and climate simulation. However, significant technical challenges remain in scaling quantum systems and reducing error rates.",
+    "output": "Quantum computing advances promise to solve complex problems through quantum mechanics, with applications in cryptography, drug discovery, and modeling, though scaling challenges persist."
+  },
+  {
+    "instruction": "Provide a brief summary",
+    "input": "Renewable energy sources such as solar, wind, and hydroelectric power are becoming increasingly cost-competitive with fossil fuels. Solar panel efficiency has improved dramatically while costs have plummeted by over 90% in the past decade. Wind turbines have grown larger and more efficient, with offshore wind farms becoming viable in many regions. Energy storage technologies, particularly lithium-ion batteries, have advanced to help address the intermittency challenges of renewable sources. Many countries have set ambitious targets to transition to 100% renewable energy within the next few decades.",
+    "output": "Renewable energy (solar, wind, hydro) is now cost-competitive with fossils, with improving efficiency, falling costs, and better storage enabling ambitious clean energy transitions."
+  }
+]
