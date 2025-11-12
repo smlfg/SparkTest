@@ -1,0 +1,33 @@
+{
+  "model": {
+    "name": "unsloth/llama-3-8b-bnb-4bit",
+    "max_seq_length": 2048,
+    "load_in_4bit": true
+  },
+  "lora": {
+    "r": 16,
+    "alpha": 16,
+    "dropout": 0.05,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ]
+  },
+  "training": {
+    "dataset_path": "./data/train.json",
+    "dataset_format": "alpaca",
+    "output_dir": "./outputs/my_adapter",
+    "num_train_epochs": 3,
+    "per_device_train_batch_size": 2,
+    "gradient_accumulation_steps": 4,
+    "learning_rate": 2e-4,
+    "warmup_steps": 5,
+    "logging_steps": 10,
+    "save_steps": 100
+  }
+}

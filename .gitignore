@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Model files and outputs
+*.bin
+*.safetensors
+*.pth
+*.pt
+*.onnx
+*.gguf
+outputs/
+checkpoints/
+models/
+*.model
+
+# Workspace (contains large files)
+workspace/
+!workspace/.gitkeep
+
+# Data
+data/
+datasets/
+*.csv
+*.json.gz
+*.parquet
+
+# Logs
+logs/
+*.log
+wandb/
+tensorboard/
+
+# System
+.DS_Store
+Thumbs.db
+
+# Temporary
+tmp/
+temp/
+*.tmp

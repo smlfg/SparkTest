@@ -1,0 +1,27 @@
+[
+  {
+    "instruction": "Explain what LoRA (Low-Rank Adaptation) is in simple terms.",
+    "input": "",
+    "output": "LoRA (Low-Rank Adaptation) is a technique for efficiently fine-tuning large language models. Instead of updating all parameters in a model, LoRA adds small trainable matrices to specific layers. This dramatically reduces the number of parameters to train (often by 10,000x), making fine-tuning much faster and requiring less memory, while still achieving great results."
+  },
+  {
+    "instruction": "Write a haiku about artificial intelligence.",
+    "input": "",
+    "output": "Silicon minds think\nNeural pathways spark with light\nWisdom without form"
+  },
+  {
+    "instruction": "Explain the concept to a beginner.",
+    "input": "Machine learning",
+    "output": "Machine learning is like teaching a computer to learn from examples, similar to how you learned to recognize dogs by seeing many different dogs. Instead of programming explicit rules, you show the computer lots of examples, and it figures out patterns on its own. For instance, to recognize cats in photos, you'd show it thousands of cat pictures, and it learns what features make something a cat."
+  },
+  {
+    "instruction": "Generate a Python function that calculates factorial.",
+    "input": "",
+    "output": "```python\ndef factorial(n):\n    \"\"\"\n    Calculate the factorial of a number.\n    \n    Args:\n        n: A non-negative integer\n        \n    Returns:\n        The factorial of n\n    \"\"\"\n    if n < 0:\n        raise ValueError(\"Factorial is not defined for negative numbers\")\n    if n == 0 or n == 1:\n        return 1\n    return n * factorial(n - 1)\n\n# Example usage\nprint(factorial(5))  # Output: 120\n```"
+  },
+  {
+    "instruction": "Compare and contrast the two concepts.",
+    "input": "Fine-tuning vs. Training from scratch",
+    "output": "**Training from Scratch:**\n- Starts with random weights\n- Requires massive datasets (billions of tokens)\n- Extremely expensive (millions of dollars)\n- Takes weeks or months\n- Used to create base models\n\n**Fine-tuning:**\n- Starts with pre-trained model\n- Needs smaller datasets (thousands of examples)\n- Much cheaper (hundreds to thousands of dollars)\n- Takes hours to days\n- Adapts model to specific tasks\n\n**Key Difference:** Fine-tuning leverages existing knowledge from a base model, making it practical for most applications, while training from scratch builds knowledge from zero."
+  }
+]
