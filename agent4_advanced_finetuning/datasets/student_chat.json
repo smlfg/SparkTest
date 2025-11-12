@@ -1,0 +1,82 @@
+[
+  {
+    "instruction": "Erkläre maschinelles Lernen in einfachen Worten.",
+    "input": "",
+    "output": "Maschinelles Lernen ist ein Bereich der künstlichen Intelligenz, bei dem Computer aus Beispielen lernen, ohne explizit programmiert zu werden. Stell dir vor, du bringst einem Computer bei, Katzen von Hunden zu unterscheiden, indem du ihm viele Bilder von beiden zeigst. Mit der Zeit lernt der Computer die Muster und kann neue Bilder selbstständig klassifizieren."
+  },
+  {
+    "instruction": "Was ist der Unterschied zwischen supervised und unsupervised learning?",
+    "input": "",
+    "output": "Supervised Learning verwendet gelabelte Daten, bei denen die richtige Antwort bereits bekannt ist. Zum Beispiel: Bilder von Katzen sind als 'Katze' markiert. Unsupervised Learning arbeitet mit unlabelten Daten und versucht, selbst Muster zu finden, wie z.B. Gruppierungen ähnlicher Datenpunkte."
+  },
+  {
+    "instruction": "Übersetze ins Englische",
+    "input": "Guten Morgen, wie geht es dir?",
+    "output": "Good morning, how are you?"
+  },
+  {
+    "instruction": "Schreibe eine kurze Zusammenfassung über neuronale Netze.",
+    "input": "",
+    "output": "Neuronale Netze sind Rechenmodelle, die vom menschlichen Gehirn inspiriert sind. Sie bestehen aus Schichten von künstlichen Neuronen, die Informationen verarbeiten und weitergeben. Durch Training mit Daten lernen diese Netze, komplexe Aufgaben wie Bilderkennung oder Sprachverarbeitung zu lösen."
+  },
+  {
+    "instruction": "Was ist der Zweck von Aktivierungsfunktionen?",
+    "input": "",
+    "output": "Aktivierungsfunktionen führen Nichtlinearität in neuronale Netze ein. Ohne sie könnte das Netz nur lineare Beziehungen lernen, was seine Fähigkeit stark einschränken würde. Beliebte Aktivierungsfunktionen sind ReLU, Sigmoid und Tanh."
+  },
+  {
+    "instruction": "Erkläre was Backpropagation ist.",
+    "input": "",
+    "output": "Backpropagation ist der Algorithmus, mit dem neuronale Netze lernen. Er berechnet den Fehler am Ausgang des Netzes und propagiert ihn rückwärts durch alle Schichten. Dabei werden die Gewichte so angepasst, dass der Fehler minimiert wird."
+  },
+  {
+    "instruction": "Was bedeutet Overfitting?",
+    "input": "",
+    "output": "Overfitting tritt auf, wenn ein Modell die Trainingsdaten zu genau lernt, einschließlich des Rauschens. Das Modell performt dann sehr gut auf Trainingsdaten, aber schlecht auf neuen, ungesehenen Daten. Um dies zu vermeiden, nutzt man Techniken wie Regularisierung oder mehr Trainingsdaten."
+  },
+  {
+    "instruction": "Schreibe Python-Code für eine einfache lineare Regression.",
+    "input": "",
+    "output": "```python\nimport numpy as np\nfrom sklearn.linear_model import LinearRegression\n\n# Beispieldaten\nX = np.array([[1], [2], [3], [4], [5]])\ny = np.array([2, 4, 6, 8, 10])\n\n# Modell erstellen und trainieren\nmodel = LinearRegression()\nmodel.fit(X, y)\n\n# Vorhersage\nprediction = model.predict([[6]])\nprint(f'Vorhersage für x=6: {prediction[0]}')\n```"
+  },
+  {
+    "instruction": "Was ist Transfer Learning?",
+    "input": "",
+    "output": "Transfer Learning ist eine Technik, bei der ein Modell, das auf einer Aufgabe trainiert wurde, für eine andere, ähnliche Aufgabe wiederverwendet wird. Zum Beispiel kann ein Bilderkennungsmodell, das auf Millionen von Bildern trainiert wurde, für eine spezifische Aufgabe wie Medizinische Bildanalyse fine-getuned werden."
+  },
+  {
+    "instruction": "Erkläre den Unterschied zwischen Batch, Mini-Batch und Stochastic Gradient Descent.",
+    "input": "",
+    "output": "Batch Gradient Descent verwendet alle Trainingsdaten für ein Update der Gewichte. Stochastic Gradient Descent (SGD) verwendet nur einen Datenpunkt. Mini-Batch Gradient Descent ist ein Kompromiss und verwendet eine kleine Gruppe von Datenpunkten. Mini-Batch ist am häufigsten, da es sowohl effizient als auch stabil ist."
+  },
+  {
+    "instruction": "Was sind Hyperparameter?",
+    "input": "",
+    "output": "Hyperparameter sind Einstellungen, die vor dem Training eines Modells festgelegt werden, wie z.B. Learning Rate, Batch Size oder Anzahl der Schichten. Im Gegensatz zu Modellparametern (Gewichten) werden sie nicht durch das Training selbst gelernt, sondern müssen vom Data Scientist gewählt werden."
+  },
+  {
+    "instruction": "Beschreibe was ein Convolutional Neural Network (CNN) ist.",
+    "input": "",
+    "output": "Ein CNN ist eine spezielle Art von neuronalem Netz, das besonders gut für Bilddaten geeignet ist. Es verwendet Convolutional Layers, die lokale Muster in Bildern erkennen können, wie Kanten oder Texturen. CNNs werden häufig für Bildklassifikation, Objekterkennung und Segmentierung verwendet."
+  },
+  {
+    "instruction": "Was ist ein Transformer-Modell?",
+    "input": "",
+    "output": "Transformer sind eine Art von neuronalem Netz, das auf dem Attention-Mechanismus basiert. Sie können sehr gut mit Sequenzdaten wie Text umgehen und sind die Grundlage für moderne Sprachmodelle wie GPT und BERT. Der Vorteil ist, dass sie lange Abhängigkeiten in Daten besser erfassen können als ältere Architekturen wie LSTMs."
+  },
+  {
+    "instruction": "Erkläre was LoRA ist.",
+    "input": "",
+    "output": "LoRA (Low-Rank Adaptation) ist eine effiziente Methode zum Fine-tuning großer Sprachmodelle. Statt alle Millionen/Milliarden Parameter zu aktualisieren, fügt LoRA kleine trainierbare Matrizen hinzu, die nur einen Bruchteil der Parameter ausmachen. Dies spart massiv Speicher und Rechenzeit."
+  },
+  {
+    "instruction": "Was ist der Unterschied zwischen Precision und Recall?",
+    "input": "",
+    "output": "Precision misst, wie viele der als positiv klassifizierten Beispiele tatsächlich positiv sind. Recall misst, wie viele der tatsächlich positiven Beispiele vom Modell gefunden wurden. Ein Modell mit hoher Precision macht wenige Fehler bei positiven Vorhersagen, eines mit hohem Recall findet die meisten positiven Fälle."
+  },
+  {
+    "instruction": "Schreibe Code für einen einfachen Datenlader in PyTorch.",
+    "input": "",
+    "output": "```python\nimport torch\nfrom torch.utils.data import Dataset, DataLoader\n\nclass CustomDataset(Dataset):\n    def __init__(self, data):\n        self.data = data\n    \n    def __len__(self):\n        return len(self.data)\n    \n    def __getitem__(self, idx):\n        return self.data[idx]\n\n# Verwendung\ndata = [i for i in range(100)]\ndataset = CustomDataset(data)\ndataloader = DataLoader(dataset, batch_size=16, shuffle=True)\n\nfor batch in dataloader:\n    print(batch)\n    break\n```"
+  }
+]

@@ -1,0 +1,143 @@
+# agent4_checklist.yaml
+
+DELIVERABLES:
+  - 3+ Jupyter notebooks (didactic)
+  - PyTorch training templates
+  - NeMo training pipeline (optional)
+  - Experiment tracking system
+  - Hyperparameter search template
+
+FUNCTIONAL_TESTS:
+  notebooks_exist:
+    test: "ls agent4_advanced_finetuning/notebooks/*.ipynb | wc -l"
+    expected: ">=3"
+
+  notebooks_executable:
+    test: "jupyter nbconvert --execute agent4_advanced_finetuning/notebooks/01_pytorch_finetuning_intro.ipynb"
+    expected: "exit 0"
+
+  pytorch_training:
+    test: "python agent4_advanced_finetuning/scripts/train_pytorch.py --config agent4_advanced_finetuning/configs/test.yaml"
+    expected: "Checkpoint saved"
+
+  experiment_logger:
+    test: "python -c 'from agent4_advanced_finetuning.utils.experiment_logger import ExperimentLogger; logger=ExperimentLogger(\"test\"); logger.save()'"
+    expected: "Experiment saved"
+
+  hyperparameter_search:
+    test: "python agent4_advanced_finetuning/scripts/hyperparam_search.py --trials 3"
+    expected: "Best config"
+
+TECHNICAL_REQUIREMENTS:
+  notebooks:
+    - path: agent4_advanced_finetuning/notebooks/01_pytorch_finetuning_intro.ipynb
+      must_have_sections:
+        - "Dataset Loading"
+        - "Model Loading"
+        - "Training Loop"
+        - "Checkpoint Saving"
+      must_have_exercises: 3
+      estimated_time: "45 minutes"
+
+    - path: agent4_advanced_finetuning/notebooks/02_lora_explained.ipynb
+      must_explain:
+        - "LoRA theory"
+        - "Rank parameter"
+        - "Memory savings calculation"
+      visualizations: 2
+
+    - path: agent4_advanced_finetuning/notebooks/03_distributed_training.ipynb
+      optional: false
+      requires: "conceptual overview (multi-node not required)"
+
+  training_script:
+    - path: agent4_advanced_finetuning/scripts/train_pytorch.py
+      must_support:
+        - --config: YAML config file
+        - --dataset: path to dataset
+        - --checkpoint_dir: output directory
+        - --resume: resume from checkpoint
+      must_log:
+        - epoch number
+        - train loss
+        - validation loss (if enabled)
+        - learning rate
+
+  experiment_tracker:
+    - path: agent4_advanced_finetuning/utils/experiment_logger.py
+      must_track:
+        - config parameters
+        - metrics per epoch
+        - timestamp
+        - git commit hash
+      output_format: JSON
+      storage: /workspace/experiments/ (or configurable)
+
+PERFORMANCE_REQUIREMENTS:
+  notebook_execution_time:
+    max: 10 minutes per notebook
+    test: "jupyter nbconvert --execute --ExecutePreprocessor.timeout=600"
+
+  training_throughput:
+    min: 1000 tokens/second
+    model: "Llama-3.1-8B"
+    hardware: "Blackwell GB10"
+    note: "With LoRA r=8, batch_size=4"
+
+  memory_efficiency:
+    max_gpu_memory: 64GB
+    model: "Llama-3.1-8B with LoRA r=8"
+    configuration: "8-bit base model + LoRA"
+
+INTEGRATION_TESTS:
+  test_notebook_workflow:
+    steps:
+      - "execute 01_pytorch_intro.ipynb"
+      - "verify checkpoint created"
+      - "load checkpoint and run inference"
+    expected: "successful generation"
+
+  test_training_pipeline:
+    steps:
+      - "run train_pytorch.py with test config"
+      - "verify experiment logged"
+      - "verify checkpoint saved"
+      - "verify metrics tracked"
+    expected: "all steps pass"
+
+  test_hyperparam_search:
+    steps:
+      - "run hyperparam_search.py with 3 trials"
+      - "verify all trials complete"
+      - "verify best config saved"
+    expected: "best config file created"
+
+DOCUMENTATION_REQUIREMENTS:
+  readme:
+    path: agent4_advanced_finetuning/README.md
+    must_include:
+      - Quick start guide
+      - Configuration examples
+      - Troubleshooting section
+      - Performance benchmarks
+      - Dataset format specification
+
+  code_documentation:
+    style: "docstrings for all functions"
+    format: "Google style"
+
+  notebook_documentation:
+    learning_objectives: required
+    exercises: "with hints/solutions"
+    estimated_time: required
+
+DELIVERABLE_STATUS:
+  notebooks: "✅ COMPLETE (3/3)"
+  training_script: "✅ COMPLETE"
+  experiment_logger: "✅ COMPLETE"
+  hyperparam_search: "✅ COMPLETE"
+  configs: "✅ COMPLETE (3 configs)"
+  datasets: "✅ COMPLETE (2 datasets)"
+  documentation: "✅ COMPLETE"
+  tests: "✅ FUNCTIONAL TESTS DEFINED"
+  nemo_pipeline: "⚠️ OPTIONAL (not implemented)"

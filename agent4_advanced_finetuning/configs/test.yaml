@@ -1,0 +1,44 @@
+# Minimal test configuration for quick validation
+# Used for functional tests
+
+model:
+  name_or_path: "gpt2"  # Small model for fast testing
+  device_map: "auto"
+
+lora:
+  enabled: true
+  r: 4
+  lora_alpha: 8
+  target_modules: ["c_attn"]
+
+dataset:
+  path: "agent4_advanced_finetuning/datasets/test_data.json"
+  train_split: 0.8
+  val_split: 0.2
+  max_seq_length: 128
+
+training:
+  num_epochs: 1
+  batch_size: 2
+  gradient_accumulation_steps: 1
+  learning_rate: 5.0e-4
+  bf16: false
+  fp16: true
+
+evaluation:
+  strategy: "no"
+
+logging:
+  strategy: "steps"
+  steps: 5
+
+checkpointing:
+  output_dir: "agent4_advanced_finetuning/test_checkpoints"
+  save_strategy: "epoch"
+  save_total_limit: 1
+
+experiment:
+  name: "test-run"
+  output_dir: "agent4_advanced_finetuning/test_experiments"
+
+seed: 42

@@ -1,0 +1,104 @@
+# Training Configuration for Agent 4
+# Default configuration for PyTorch fine-tuning
+
+# Model configuration
+model:
+  name_or_path: "meta-llama/Llama-3.1-8B-Instruct"
+  load_in_8bit: true  # Use 8-bit quantization for memory efficiency
+  device_map: "auto"
+  torch_dtype: "float16"
+  trust_remote_code: false
+
+# LoRA configuration
+lora:
+  enabled: true
+  r: 8  # LoRA rank
+  lora_alpha: 16  # LoRA alpha parameter
+  lora_dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "v_proj"
+    - "k_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+# Dataset configuration
+dataset:
+  path: "agent4_advanced_finetuning/datasets/student_chat.json"
+  format: "json"  # json, csv, parquet
+  train_split: 0.9
+  val_split: 0.1
+  max_seq_length: 2048
+  preprocessing:
+    template: "alpaca"  # alpaca, vicuna, chatml
+    add_eos_token: true
+
+# Training hyperparameters
+training:
+  num_epochs: 3
+  batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 2.0e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  lr_scheduler_type: "cosine"  # linear, cosine, constant
+  max_grad_norm: 1.0
+  fp16: false
+  bf16: true  # Use bfloat16 for Blackwell GB10
+
+# Optimizer configuration
+optimizer:
+  type: "adamw"  # adamw, sgd, adafactor
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+
+# Evaluation
+evaluation:
+  strategy: "epoch"  # steps, epoch, no
+  eval_steps: 100
+  eval_accumulation_steps: 1
+  metrics:
+    - "loss"
+    - "perplexity"
+
+# Logging
+logging:
+  strategy: "steps"
+  steps: 10
+  report_to: ["tensorboard"]  # tensorboard, wandb, none
+  log_dir: "agent4_advanced_finetuning/logs"
+
+# Checkpointing
+checkpointing:
+  output_dir: "agent4_advanced_finetuning/checkpoints"
+  save_strategy: "epoch"  # steps, epoch, no
+  save_steps: 500
+  save_total_limit: 3
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+
+# Experiment tracking
+experiment:
+  name: "llama-3.1-8b-lora-r8"
+  tags:
+    - "lora"
+    - "llama-3.1"
+    - "student-chat"
+  output_dir: "/workspace/experiments"
+
+# Hardware configuration
+hardware:
+  use_cuda: true
+  cuda_device: 0
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+
+# Reproducibility
+seed: 42
+deterministic: true

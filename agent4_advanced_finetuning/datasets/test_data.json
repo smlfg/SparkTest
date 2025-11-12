@@ -1,0 +1,27 @@
+[
+  {
+    "instruction": "Say hello",
+    "input": "",
+    "output": "Hello! How can I help you today?"
+  },
+  {
+    "instruction": "Count to three",
+    "input": "",
+    "output": "One, two, three."
+  },
+  {
+    "instruction": "What is 2+2?",
+    "input": "",
+    "output": "2+2 equals 4."
+  },
+  {
+    "instruction": "Name a color",
+    "input": "",
+    "output": "Blue is a color."
+  },
+  {
+    "instruction": "What is AI?",
+    "input": "",
+    "output": "AI stands for Artificial Intelligence, which is the simulation of human intelligence by machines."
+  }
+]
