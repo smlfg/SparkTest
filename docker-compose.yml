@@ -96,22 +96,36 @@ services:
   agent5-api:
     build:
       context: .
-      dockerfile: docker/Dockerfile.api
+      dockerfile: agents/agent5_inference/docker/Dockerfile.api
+      args:
+        BASE_IMAGE: dgx-spark-base:latest
     container_name: agent5-api
     ports:
       - "8888:8888"
+    volumes:
+      - ./shared:/app/shared:ro
+      - ./agents/agent5_inference/api:/app/api:ro
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
       - NIM_BASE_URL=http://nim-gateway:80
       - NGC_API_KEY=${NGC_API_KEY}
       - API_HOST=0.0.0.0
       - API_PORT=8888
+      - LOG_LEVEL=info
+      - LOG_FORMAT=json
     depends_on:
       - ollama
       - nim-gateway
     restart: unless-stopped
     networks:
       - inference-network
+      - monitoring-network
+    healthcheck:
+      test: ["CMD", "python3", "/app/shared/health_check.py", "--port", "8888"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   nim-gateway:
     image: nginx:alpine
@@ -119,13 +133,18 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - ./configs/nginx-nim.conf:/etc/nginx/nginx.conf:ro
+      - ./agents/agent5_inference/configs/nginx-nim.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - nim-llama-405b
       - nim-llama-70b
     restart: unless-stopped
     networks:
       - inference-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   ollama-data:
@@ -140,3 +159,7 @@ volumes:
 networks:
   inference-network:
     driver: bridge
+    name: dgx-spark-inference
+  monitoring-network:
+    driver: bridge
+    name: dgx-spark-monitoring

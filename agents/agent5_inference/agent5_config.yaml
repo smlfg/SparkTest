@@ -1,0 +1,224 @@
+# Agent 5: Inference Engine Configuration
+# Conforms to shared/config_schema.yaml
+
+name: "ollama-nim-inference"
+display_name: "Agent 5: Inference Engine"
+version: "1.0.0"
+description: "GPU-accelerated LLM inference using Ollama and NVIDIA NIM with unified model management API"
+agent_id: "agent5"
+
+dependencies:
+  - "docker"
+  - "docker-compose"
+  - "nvidia-container-toolkit"
+  - "nvidia-driver-535"
+
+ports:
+  - name: "ollama-api"
+    container: 11434
+    host: 11434
+    protocol: "tcp"
+    required: true
+
+  - name: "open-webui"
+    container: 8080
+    host: 8080
+    protocol: "tcp"
+    required: true
+
+  - name: "nim-gateway"
+    container: 8000
+    host: 8000
+    protocol: "tcp"
+    required: false
+
+  - name: "model-management-api"
+    container: 8888
+    host: 8888
+    protocol: "tcp"
+    required: true
+
+  - name: "nim-405b"
+    container: 8000
+    host: 8001
+    protocol: "tcp"
+    required: false
+
+  - name: "nim-70b"
+    container: 8000
+    host: 8002
+    protocol: "tcp"
+    required: false
+
+  - name: "metrics"
+    container: 9090
+    host: 9090
+    protocol: "tcp"
+    required: false
+
+volumes:
+  - name: "ollama-data"
+    container_path: "/root/.ollama"
+    type: "volume"
+    read_only: false
+    required: true
+
+  - name: "webui-data"
+    container_path: "/app/backend/data"
+    type: "volume"
+    read_only: false
+    required: true
+
+  - name: "nim-cache"
+    container_path: "/opt/nim/.cache"
+    type: "volume"
+    read_only: false
+    required: false
+
+  - name: "nim-models"
+    container_path: "/models"
+    type: "volume"
+    read_only: false
+    required: false
+
+  - name: "api-config"
+    host_path: "./configs"
+    container_path: "/app/config"
+    type: "bind"
+    read_only: true
+    required: false
+
+gpu_required: true
+
+gpu_config:
+  count: -1  # All available GPUs
+  memory_gb: 16
+  capabilities:
+    - compute
+    - utility
+  driver_version: "535.0"
+
+resources:
+  cpu_limit: "8.0"
+  memory_limit: "32G"
+  shm_size: "16G"
+
+environment:
+  # Ollama
+  OLLAMA_BASE_URL: "http://ollama:11434"
+
+  # NIM
+  NIM_BASE_URL: "http://nim-gateway:80"
+  NGC_API_KEY: "${NGC_API_KEY}"
+
+  # API
+  API_HOST: "0.0.0.0"
+  API_PORT: "8888"
+
+  # GPU
+  NVIDIA_VISIBLE_DEVICES: "all"
+  NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+  CUDA_VISIBLE_DEVICES: "all"
+
+  # Logging
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+
+health_check:
+  enabled: true
+  endpoint: "/health"
+  port: 8888
+  interval: 30
+  timeout: 10
+  retries: 3
+  start_period: 60
+
+monitoring:
+  enabled: true
+  prometheus: true
+  metrics_port: 9090
+  grafana_dashboard: "dashboards/agent5_dashboard.json"
+  alerts:
+    - "alerts/agent5_alerts.yml"
+
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
+  rotation: true
+  max_size: "100M"
+  max_files: 10
+
+networks:
+  - "inference-network"
+  - "monitoring-network"
+
+security:
+  run_as_user: "1000:1000"
+  privileged: false
+  cap_drop:
+    - ALL
+  cap_add:
+    - NET_BIND_SERVICE
+  read_only_root_fs: false
+
+deployment:
+  replicas: 1
+  restart_policy: "unless-stopped"
+  update_config:
+    parallelism: 1
+    delay: "10s"
+  rollback_config:
+    enabled: true
+
+testing:
+  unit_tests: "tests/unit/test_agent5.py"
+  integration_tests: "tests/integration/test_agent5_integration.py"
+  smoke_tests:
+    - "curl -f http://localhost:8888/health"
+    - "curl -f http://localhost:11434/api/tags"
+    - "python scripts/test-api.sh"
+
+# Model Registry
+models:
+  ollama:
+    - "llama3.1:70b"
+    - "mistral:7b"
+    - "codellama:13b"
+    - "neural-chat:7b"
+    - "mixtral:8x7b"
+
+  nim:
+    - "nvcr.io/nim/meta/llama-3.1-405b-instruct"
+    - "nvcr.io/nim/meta/llama-3.1-70b-instruct"
+    - "nvcr.io/nim/meta/llama-3.1-8b-instruct"
+
+# API Endpoints
+api_endpoints:
+  - path: "/health"
+    method: "GET"
+    description: "Health check endpoint"
+
+  - path: "/api/models"
+    method: "GET"
+    description: "List all available models"
+
+  - path: "/api/models/registry"
+    method: "GET"
+    description: "Get model registry"
+
+  - path: "/api/models/pull"
+    method: "POST"
+    description: "Pull/download a model"
+
+  - path: "/api/completion"
+    method: "POST"
+    description: "Generate text completion"
+
+  - path: "/api/chat"
+    method: "POST"
+    description: "Generate chat completion"
+
+  - path: "/api/providers"
+    method: "GET"
+    description: "List configured providers"

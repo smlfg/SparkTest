@@ -1,448 +1,401 @@
-# Agent 5: Inference Engine - Ollama + NVIDIA NIM
+# DGX Spark Playbooks
 
-A comprehensive inference engine deployment solution combining **Ollama** for local GPU-accelerated LLM inference, **NVIDIA NIM** (Inference Microservices) for enterprise-grade models, and **Open WebUI** for a user-friendly interface.
+Unified infrastructure automation and deployment system for NVIDIA DGX systems with standardized playbooks, shared components, and comprehensive agent ecosystem.
 
-## 🚀 Features
+## 📖 Overview
 
-- **Ollama Integration**: GPU-accelerated local model inference
-  - Multiple model support (Llama 3.1, Mistral, CodeLlama, etc.)
-  - Docker containerized deployment
-  - Automatic model pulling and management
+This repository provides a complete infrastructure-as-code solution for deploying and managing AI/ML workloads on NVIDIA DGX systems. It includes:
 
-- **NVIDIA NIM Support**: Enterprise-grade inference microservices
-  - Support for Llama 3.1 (405B, 70B, 8B) and other models
-  - OpenAI-compatible API
-  - Load-balanced API gateway
+- **Shared Components**: Reusable Docker images, configuration schemas, health checks, and utilities
+- **Agent Ecosystem**: Modular deployment agents for different infrastructure components
+- **Standardized Configuration**: Unified YAML schema for consistent deployments
+- **Testing Framework**: Comprehensive unit and integration tests
+- **Monitoring & Observability**: Built-in health checks, metrics, and logging
 
-- **Open WebUI**: Modern web interface
-  - Chat interface for model interaction
-  - User authentication and management
-  - Multi-model support
+## 🏗️ Repository Structure
 
-- **Unified Model Management API**: Single API for all inference backends
-  - RESTful API with OpenAPI documentation
-  - Model registry and discovery
-  - Health monitoring and status checks
+```
+dgx-spark-playbooks/
+├── agents/                          # Deployment agents
+│   ├── agent5_inference/           # Inference engine (Ollama + NIM)
+│   │   ├── api/                    # Model management API
+│   │   ├── playbooks/              # Ansible playbooks
+│   │   ├── scripts/                # Deployment scripts
+│   │   ├── docker/                 # Docker configurations
+│   │   ├── configs/                # Configuration files
+│   │   ├── agent5_config.yaml      # Agent configuration
+│   │   └── README.md
+│   └── ...                         # Other agents (agent1-agent10)
+│
+├── shared/                          # Shared components
+│   ├── base.Dockerfile             # Base Docker image
+│   ├── config_schema.yaml          # Unified configuration schema
+│   ├── health_check.py             # Health check API
+│   ├── utils/                      # Shared utilities
+│   │   ├── config_loader.py
+│   │   ├── logger.py
+│   │   ├── metrics.py
+│   │   └── docker_utils.py
+│   └── README.md
+│
+├── tests/                           # Test suite
+│   ├── unit/                       # Unit tests
+│   ├── integration/                # Integration tests
+│   └── conftest.py                 # Pytest configuration
+│
+├── docker-compose.yml              # Main docker-compose file
+├── requirements.txt                # Python dependencies
+├── pytest.ini                      # Pytest configuration
+├── .gitignore
+└── README.md                       # This file
+```
 
-## 📋 Prerequisites
+## 🚀 Quick Start
 
-### Hardware Requirements
+### 1. Clone Repository
 
-- **For Ollama**:
-  - NVIDIA GPU with 8GB+ VRAM (16GB+ recommended)
-  - 16GB+ RAM
-  - 50GB+ storage for models
-
-- **For NIM**:
-  - NVIDIA GPU with 24GB+ VRAM (80GB+ for 405B models)
-  - 32GB+ RAM
-  - 100GB+ storage
-
-### Software Requirements
-
-- Docker 20.10+
-- Docker Compose 2.0+
-- NVIDIA Container Toolkit
-- NVIDIA GPU Drivers 535+
-- (Optional) Ansible 2.9+ for automated deployment
-
-## 🛠️ Installation
-
-### Option 1: Quick Start with Docker Compose (Recommended)
-
-1. **Clone the repository**:
 ```bash
 git clone <repository-url>
-cd SparkTest
+cd dgx-spark-playbooks
 ```
 
-2. **Configure environment**:
+### 2. Build Shared Base Image (Optional)
+
 ```bash
-cp configs/agent5.env.example .env
-# Edit .env and add your NGC_API_KEY for NIM access
-nano .env
+docker build -t dgx-spark-base:latest -f shared/base.Dockerfile .
 ```
 
-3. **Deploy all services**:
+### 3. Deploy Agent 5 (Inference Engine)
+
 ```bash
-chmod +x scripts/deploy.sh
+# Configure environment
+cp agents/agent5_inference/configs/agent5.env.example .env
+nano .env  # Add your NGC_API_KEY and other settings
+
+# Deploy with Docker Compose
+docker-compose up -d
+
+# Or use deployment script
+./agents/agent5_inference/scripts/deploy.sh
+```
+
+### 4. Access Services
+
+- **Open WebUI**: http://localhost:8080
+- **Model Management API**: http://localhost:8888
+- **API Documentation**: http://localhost:8888/docs
+- **Ollama**: http://localhost:11434
+
+## 📦 Available Agents
+
+### Agent 5: Inference Engine ✅ (Implemented)
+
+GPU-accelerated LLM inference with Ollama and NVIDIA NIM.
+
+**Components:**
+- Ollama for local model inference
+- NVIDIA NIM for enterprise models
+- Open WebUI for chat interface
+- Unified model management API
+
+**Quick Deploy:**
+```bash
+cd agents/agent5_inference
 ./scripts/deploy.sh
 ```
 
-4. **Access the services**:
-- Open WebUI: http://localhost:8080
-- Model Management API: http://localhost:8888
-- API Documentation: http://localhost:8888/docs
+**Documentation:** [agents/agent5_inference/README.md](agents/agent5_inference/README.md)
 
-### Option 2: Manual Docker Compose Deployment
+### Other Agents (Coming Soon)
+
+- **Agent 1**: Infrastructure Foundation
+- **Agent 2**: Monitoring Dashboard
+- **Agent 3**: Data Pipeline
+- **Agent 4**: Training Orchestration
+- **Agent 6**: Model Registry
+- **Agent 7**: Experiment Tracking
+- **Agent 8**: Deployment Gateway
+- **Agent 9**: Security & Compliance
+- **Agent 10**: Integration Hub
+
+## 🔧 Shared Components
+
+All agents use standardized shared components for consistency and maintainability.
+
+### Base Docker Image
+
+NVIDIA PyTorch-based image with CUDA, common dependencies, and monitoring tools.
+
+```dockerfile
+FROM dgx-spark-base:latest
+# Your agent-specific configuration
+```
+
+### Configuration Schema
+
+Unified YAML schema ensures all agents follow the same configuration structure:
+
+```yaml
+name: "my-agent"
+agent_id: "agent1"
+gpu_required: true
+ports:
+  - name: "api"
+    container: 8080
+    host: 8080
+    protocol: "tcp"
+# ... see shared/config_schema.yaml for complete spec
+```
+
+### Health Check API
+
+Standardized health checking across all services:
+
+```python
+from shared.health_check import HealthChecker
+
+checker = HealthChecker()
+result = checker.check_service(port=8080, endpoint="/health")
+system_health = checker.get_system_health()
+```
+
+### Utilities
+
+- **Config Loader**: Load and validate YAML configurations
+- **Logger**: Structured logging (text/JSON)
+- **Metrics**: Prometheus-compatible metrics collection
+- **Docker Manager**: Docker API wrapper for container management
+
+See [shared/README.md](shared/README.md) for detailed documentation.
+
+## 🧪 Testing
+
+### Run All Tests
 
 ```bash
-# Copy environment file
-cp configs/agent5.env.example .env
+# Install test dependencies
+pip install -r requirements.txt
 
-# Edit with your settings
-nano .env
+# Run all tests
+pytest
 
-# Start services
+# Run specific test suite
+pytest tests/unit/ -v
+pytest tests/integration/ -v
+
+# Run with coverage
+pytest --cov=shared --cov=agents
+```
+
+### Run Agent-Specific Tests
+
+```bash
+# Test Agent 5
+pytest tests/unit/test_agent5.py -v
+pytest tests/integration/test_agent5_integration.py -v
+
+# Skip slow tests
+pytest -m "not slow"
+```
+
+## 📊 Monitoring & Observability
+
+### Health Checks
+
+All services expose health check endpoints:
+
+```bash
+# Check API health
+curl http://localhost:8888/health
+
+# Check Ollama
+curl http://localhost:11434/api/tags
+
+# Use shared health checker
+python3 shared/health_check.py --port 8888
+python3 shared/health_check.py --system
+```
+
+### Metrics
+
+Prometheus-compatible metrics available at:
+- Model API: http://localhost:9090/metrics (if enabled)
+
+### Logs
+
+Structured JSON logging to stdout:
+
+```json
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "level": "INFO",
+  "logger": "agent5",
+  "message": "Service started",
+  "module": "main"
+}
+```
+
+## 🔒 Security
+
+### Best Practices
+
+1. **Environment Variables**: Never commit secrets (.env files are gitignored)
+2. **NGC API Keys**: Required for NIM, store securely
+3. **Network Isolation**: Services communicate via Docker networks
+4. **User Permissions**: Containers run as non-root where possible
+5. **Image Scanning**: Scan base images for vulnerabilities
+
+### Securing Deployments
+
+```yaml
+# In agent configuration
+security:
+  run_as_user: "1000:1000"
+  privileged: false
+  cap_drop:
+    - ALL
+  read_only_root_fs: false
+```
+
+## 📝 Development
+
+### Adding a New Agent
+
+1. **Create agent directory:**
+```bash
+mkdir -p agents/agentN_name/{api,playbooks,scripts,docker,configs}
+```
+
+2. **Create agent configuration:**
+```yaml
+# agents/agentN_name/agentN_config.yaml
+name: "agent-name"
+agent_id: "agentN"
+# ... follow shared/config_schema.yaml
+```
+
+3. **Implement components:**
+   - API/services in `api/`
+   - Ansible playbooks in `playbooks/`
+   - Deployment scripts in `scripts/`
+   - Docker configs in `docker/`
+
+4. **Add tests:**
+```python
+# tests/unit/test_agentN.py
+# tests/integration/test_agentN_integration.py
+```
+
+5. **Update documentation:**
+   - Agent README
+   - Main README (this file)
+
+### Using Shared Components
+
+```python
+# In your agent's Python code
+import sys
+sys.path.insert(0, '/app/shared')
+
+from shared.health_check import HealthChecker
+from shared.utils import setup_logger, MetricsCollector
+
+logger = setup_logger('agentN')
+metrics = MetricsCollector(prefix='agentN')
+```
+
+### Configuration Validation
+
+```bash
+# Validate agent configuration
+python3 -c "
+from shared.utils import load_config, validate_config
+config = load_config('agents/agentN/agentN_config.yaml')
+assert validate_config(config), 'Invalid configuration'
+print('Configuration valid!')
+"
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Docker Build Fails:**
+```bash
+# Check Docker version
+docker --version  # Should be 20.10+
+
+# Check NVIDIA Container Toolkit
+docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
+```
+
+**GPU Not Available:**
+```bash
+# Check NVIDIA driver
+nvidia-smi
+
+# Check Docker GPU support
+docker run --rm --gpus all ubuntu nvidia-smi
+```
+
+**Service Won't Start:**
+```bash
+# Check logs
+docker-compose logs -f service-name
+
+# Check health
+python3 shared/health_check.py --port 8888
+
+# Restart service
+docker-compose restart service-name
+```
+
+**Port Already in Use:**
+```bash
+# Find process using port
+lsof -i :8888
+
+# Change port in .env file
+echo "API_PORT=8889" >> .env
 docker-compose up -d
-
-# Check status
-docker-compose ps
-
-# View logs
-docker-compose logs -f
 ```
 
-### Option 3: Ansible Automated Deployment
-
-1. **Configure inventory**:
-```bash
-nano configs/inventory.ini
-```
-
-2. **Run deployment playbook**:
-```bash
-cd playbooks
-ansible-playbook -i ../configs/inventory.ini deploy-all.yml
-```
-
-3. **Deploy specific components**:
-```bash
-# Ollama only
-ansible-playbook -i ../configs/inventory.ini ollama.yml
-
-# Open WebUI only
-ansible-playbook -i ../configs/inventory.ini open-webui.yml
-
-# NIM only
-ansible-playbook -i ../configs/inventory.ini nim-llm.yml
-```
-
-## 📚 Usage
-
-### Model Management
-
-#### List Available Models
-```bash
-# Using the management script
-./scripts/manage-models.sh list
-
-# Using the API
-curl http://localhost:8888/api/models | jq '.'
-```
-
-#### Pull a Model (Ollama)
-```bash
-# Using the management script
-./scripts/manage-models.sh pull llama3.1:70b
-
-# Using the API
-curl -X POST "http://localhost:8888/api/models/pull?model_name=llama3.1:70b"
-```
-
-#### Test a Model
-```bash
-# Using the management script
-./scripts/manage-models.sh test llama3.1:70b ollama
-
-# Using the API directly
-curl -X POST http://localhost:8888/api/completion \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "llama3.1:70b",
-    "prompt": "Explain quantum computing in simple terms",
-    "max_tokens": 200,
-    "provider": "ollama"
-  }'
-```
-
-### Using the API
-
-#### Python Example
-```python
-import requests
-
-API_URL = "http://localhost:8888"
-
-# List models
-response = requests.get(f"{API_URL}/api/models")
-models = response.json()
-print(f"Available models: {models}")
-
-# Generate completion
-completion_request = {
-    "model": "llama3.1:70b",
-    "prompt": "Write a Python function to calculate fibonacci numbers",
-    "max_tokens": 500,
-    "temperature": 0.7,
-    "provider": "ollama"
-}
-
-response = requests.post(
-    f"{API_URL}/api/completion",
-    json=completion_request
-)
-result = response.json()
-print(result["response"])
-
-# Chat completion
-chat_request = {
-    "model": "llama3.1:70b",
-    "messages": [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "What is machine learning?"}
-    ],
-    "max_tokens": 300,
-    "provider": "ollama"
-}
-
-response = requests.post(
-    f"{API_URL}/api/chat",
-    json=chat_request
-)
-print(response.json())
-```
-
-#### cURL Examples
-```bash
-# Health check
-curl http://localhost:8888/health
-
-# List all models
-curl http://localhost:8888/api/models
-
-# Get model registry
-curl http://localhost:8888/api/models/registry
-
-# List providers
-curl http://localhost:8888/api/providers
-
-# Text completion (Ollama)
-curl -X POST http://localhost:8888/api/completion \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "mistral:7b",
-    "prompt": "Once upon a time",
-    "max_tokens": 100,
-    "temperature": 0.8,
-    "provider": "ollama"
-  }'
-
-# Chat completion (NIM)
-curl -X POST http://localhost:8888/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "llama-3.1-70b-instruct",
-    "messages": [
-      {"role": "user", "content": "Hello, how are you?"}
-    ],
-    "max_tokens": 150,
-    "provider": "nim"
-  }'
-```
-
-### Using Open WebUI
-
-1. Navigate to http://localhost:8080
-2. Create an account (first user becomes admin)
-3. Select a model from the dropdown
-4. Start chatting!
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Edit `.env` file or set these environment variables:
-
-```bash
-# Ollama Configuration
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_PORT=11434
-
-# Open WebUI Configuration
-WEBUI_PORT=8080
-WEBUI_NAME="Agent5 Inference Engine"
-ENABLE_NGINX=false
-
-# NIM Configuration
-NIM_BASE_URL=http://localhost:8000
-NIM_PORT=8000
-NGC_API_KEY=your_nvidia_ngc_api_key_here
-
-# Model Management API
-API_HOST=0.0.0.0
-API_PORT=8888
-
-# GPU Configuration
-NVIDIA_VISIBLE_DEVICES=all
-NVIDIA_DRIVER_CAPABILITIES=compute,utility
-```
-
-### Model Configuration
-
-Edit the `MODEL_REGISTRY` in `api/agent5_model_api.py`:
-
-```python
-MODEL_REGISTRY = {
-    "ollama_models": [
-        "llama3.1:70b",
-        "mistral:7b",
-        "codellama:13b",
-        "neural-chat:7b"
-    ],
-    "nim_endpoints": [
-        "nvcr.io/nim/meta/llama-3.1-405b-instruct",
-        "nvcr.io/nim/meta/llama-3.1-70b-instruct"
-    ]
-}
-```
-
-## 📊 Monitoring
-
-### Check Service Status
-```bash
-# Docker Compose deployment
-docker-compose ps
-docker-compose logs -f [service-name]
-
-# Check individual services
-curl http://localhost:11434/api/tags  # Ollama
-curl http://localhost:8080            # Open WebUI
-curl http://localhost:8000/health     # NIM Gateway
-curl http://localhost:8888/health     # Model API
-```
-
-### GPU Monitoring
-```bash
-# Check GPU usage
-nvidia-smi
-
-# Watch GPU usage
-watch -n 1 nvidia-smi
-```
-
-### API Health Checks
-```bash
-./scripts/test-api.sh
-```
-
-## 🗂️ Project Structure
-
-```
-SparkTest/
-├── api/
-│   └── agent5_model_api.py      # Unified model management API
-├── configs/
-│   ├── agent5.env.example       # Environment configuration template
-│   ├── inventory.ini            # Ansible inventory
-│   └── nginx-nim.conf           # Nginx configuration for NIM gateway
-├── docker/
-│   └── Dockerfile.api           # Dockerfile for API service
-├── playbooks/
-│   ├── deploy-all.yml           # Main deployment playbook
-│   ├── ollama.yml               # Ollama deployment playbook
-│   ├── open-webui.yml           # Open WebUI deployment playbook
-│   └── nim-llm.yml              # NIM deployment playbook
-├── scripts/
-│   ├── deploy.sh                # Main deployment script
-│   ├── manage-models.sh         # Model management utilities
-│   └── test-api.sh              # API testing script
-├── docker-compose.yml           # Docker Compose configuration
-├── requirements.txt             # Python dependencies
-└── README.md                    # This file
-```
-
-## 🔍 Troubleshooting
-
-### Ollama Issues
-
-**Problem**: Ollama container fails to start
-```bash
-# Check GPU availability
-nvidia-smi
-
-# Check Docker logs
-docker logs ollama
-
-# Restart container
-docker restart ollama
-```
-
-**Problem**: Models not loading
-```bash
-# Check available disk space
-df -h
-
-# Pull model manually
-docker exec ollama ollama pull llama3.1:70b
-```
-
-### NIM Issues
-
-**Problem**: NIM container fails to authenticate
-```bash
-# Verify NGC API key
-echo $NGC_API_KEY
-
-# Test NGC login
-docker login nvcr.io
-# Username: $oauthtoken
-# Password: <NGC_API_KEY>
-```
-
-**Problem**: Out of GPU memory
-```bash
-# Check GPU memory
-nvidia-smi
-
-# Use smaller models or reduce batch size
-# Edit docker-compose.yml to use fewer/smaller models
-```
-
-### API Issues
-
-**Problem**: API not responding
-```bash
-# Check API logs
-docker logs agent5-api
-
-# Restart API
-docker restart agent5-api
-
-# Check connectivity
-curl http://localhost:8888/health
-```
-
-## 🔐 Security Considerations
-
-1. **NGC API Key**: Keep your NVIDIA NGC API key secure. Never commit it to version control.
-
-2. **WebUI Authentication**: Enable authentication in Open WebUI for production deployments.
-
-3. **Network Security**: Configure firewall rules to restrict access to inference endpoints.
-
-4. **SSL/TLS**: Use reverse proxy (Nginx/Traefik) with SSL certificates for production.
-
-## 🚢 Production Deployment
-
-For production deployments, consider:
-
-1. **Reverse Proxy**: Use Nginx or Traefik with SSL/TLS
-2. **Monitoring**: Set up Prometheus + Grafana for metrics
-3. **Load Balancing**: Deploy multiple inference backends
-4. **Authentication**: Implement API key authentication
-5. **Rate Limiting**: Protect against abuse
-6. **Backup**: Regular backups of model data and configurations
-
-## 📖 API Documentation
-
-Once deployed, interactive API documentation is available at:
-- Swagger UI: http://localhost:8888/docs
-- ReDoc: http://localhost:8888/redoc
+### Getting Help
+
+1. Check agent-specific README
+2. Review shared component documentation
+3. Check integration tests for usage examples
+4. Open an issue with:
+   - Agent name and version
+   - Error messages and logs
+   - System information (`nvidia-smi`, `docker info`)
+
+## 📚 Documentation
+
+- **Main README**: This file
+- **Shared Components**: [shared/README.md](shared/README.md)
+- **Agent 5 (Inference)**: [agents/agent5_inference/README.md](agents/agent5_inference/README.md)
+- **Configuration Schema**: [shared/config_schema.yaml](shared/config_schema.yaml)
+- **API Documentation**: http://localhost:8888/docs (when deployed)
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit pull requests or open issues.
+### Guidelines
+
+1. Follow existing directory structure
+2. Conform to configuration schema
+3. Add comprehensive tests
+4. Update documentation
+5. Use shared components
+6. Include health checks
+
+### Pull Request Process
+
+1. Create feature branch
+2. Implement changes
+3. Add/update tests
+4. Update documentation
+5. Submit PR with description
 
 ## 📄 License
 
@@ -450,17 +403,12 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 ## 🙏 Acknowledgments
 
-- [Ollama](https://ollama.ai/) - Local LLM inference platform
-- [NVIDIA NIM](https://www.nvidia.com/en-us/ai/) - Enterprise inference microservices
-- [Open WebUI](https://github.com/open-webui/open-webui) - Web interface for LLMs
-
-## 📞 Support
-
-For issues and questions:
-- Open an issue on GitHub
-- Check existing documentation
-- Review troubleshooting section
+- [Ollama](https://ollama.ai/) - Local LLM inference
+- [NVIDIA NIM](https://www.nvidia.com/en-us/ai/) - Enterprise inference
+- [Open WebUI](https://github.com/open-webui/open-webui) - Web interface
 
 ---
 
-**Built with ❤️ for the Agent 5 Inference Engine**
+**Version**: 1.0.0
+**Last Updated**: 2024
+**Maintained by**: DGX Spark Team

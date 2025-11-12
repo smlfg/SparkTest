@@ -1,0 +1,330 @@
+# Unified Configuration Schema for DGX Spark Playbooks
+# All agents must conform to this schema
+
+schema_version: "1.0.0"
+
+# Playbook Configuration Schema
+playbook:
+  # Basic information
+  name:
+    type: str
+    required: true
+    description: "Unique name identifier for the playbook"
+    example: "ollama-inference"
+
+  display_name:
+    type: str
+    required: true
+    description: "Human-readable display name"
+    example: "Ollama Inference Engine"
+
+  version:
+    type: str
+    required: true
+    pattern: "^\\d+\\.\\d+\\.\\d+$"
+    description: "Semantic version"
+    example: "1.0.0"
+
+  description:
+    type: str
+    required: true
+    description: "Brief description of the playbook functionality"
+
+  agent_id:
+    type: str
+    required: true
+    pattern: "^agent\\d+$"
+    description: "Agent identifier"
+    example: "agent5"
+
+  # Dependencies
+  dependencies:
+    type: list[str]
+    required: false
+    default: []
+    description: "List of dependent services or playbooks"
+    example:
+      - "docker"
+      - "nvidia-container-toolkit"
+      - "agent1_infra"
+
+  # Network configuration
+  ports:
+    type: list[object]
+    required: true
+    description: "Port mappings for the service"
+    schema:
+      - name: str           # Port name/description
+        container: int      # Container port
+        host: int          # Host port
+        protocol: str      # tcp/udp
+        required: bool     # Is this port mandatory
+    example:
+      - name: "api"
+        container: 8080
+        host: 8080
+        protocol: "tcp"
+        required: true
+      - name: "metrics"
+        container: 9090
+        host: 9090
+        protocol: "tcp"
+        required: false
+
+  # Storage configuration
+  volumes:
+    type: list[object]
+    required: false
+    default: []
+    description: "Volume mounts for persistent data"
+    schema:
+      - name: str          # Volume name
+        host_path: str     # Host path (optional)
+        container_path: str # Container mount point
+        type: str          # bind/volume/tmpfs
+        read_only: bool    # Mount as read-only
+        required: bool     # Is this volume mandatory
+    example:
+      - name: "data"
+        container_path: "/app/data"
+        type: "volume"
+        read_only: false
+        required: true
+      - name: "config"
+        host_path: "/etc/myapp"
+        container_path: "/app/config"
+        type: "bind"
+        read_only: true
+        required: true
+
+  # GPU requirements
+  gpu_required:
+    type: bool
+    required: true
+    description: "Whether GPU access is required"
+    example: true
+
+  gpu_config:
+    type: object
+    required: false
+    description: "GPU configuration details"
+    schema:
+      count: int           # Number of GPUs (-1 for all)
+      memory_gb: int       # Minimum GPU memory required
+      capabilities:
+        - compute
+        - utility
+        - graphics
+      driver_version: str  # Minimum driver version
+    example:
+      count: 1
+      memory_gb: 16
+      capabilities:
+        - compute
+        - utility
+      driver_version: "535.0"
+
+  # Resource limits
+  resources:
+    type: object
+    required: false
+    description: "Resource constraints"
+    schema:
+      cpu_limit: str      # CPU limit (e.g., "4.0")
+      cpu_reservation: str # CPU reservation
+      memory_limit: str   # Memory limit (e.g., "8G")
+      memory_reservation: str # Memory reservation
+      shm_size: str      # Shared memory size
+    example:
+      cpu_limit: "4.0"
+      memory_limit: "16G"
+      shm_size: "8G"
+
+  # Environment variables
+  environment:
+    type: dict[str, str]
+    required: false
+    default: {}
+    description: "Environment variables for the container"
+    example:
+      CUDA_VISIBLE_DEVICES: "all"
+      LOG_LEVEL: "info"
+      API_PORT: "8080"
+
+  # Health check configuration
+  health_check:
+    type: object
+    required: true
+    description: "Health check configuration"
+    schema:
+      enabled: bool
+      endpoint: str       # HTTP endpoint to check
+      port: int          # Port for health check
+      interval: int      # Check interval in seconds
+      timeout: int       # Timeout in seconds
+      retries: int       # Number of retries
+      start_period: int  # Start period in seconds
+    example:
+      enabled: true
+      endpoint: "/health"
+      port: 8080
+      interval: 30
+      timeout: 10
+      retries: 3
+      start_period: 60
+
+  # Monitoring configuration
+  monitoring:
+    type: object
+    required: false
+    description: "Monitoring and metrics configuration"
+    schema:
+      enabled: bool
+      prometheus: bool
+      metrics_port: int
+      grafana_dashboard: str  # Path to dashboard JSON
+      alerts: list[str]       # Alert rule files
+    example:
+      enabled: true
+      prometheus: true
+      metrics_port: 9090
+      grafana_dashboard: "dashboards/agent5.json"
+
+  # Logging configuration
+  logging:
+    type: object
+    required: false
+    description: "Logging configuration"
+    schema:
+      level: str          # debug/info/warning/error
+      format: str         # json/text
+      output: str         # stdout/file/syslog
+      rotation: bool      # Enable log rotation
+      max_size: str      # Max log file size
+      max_files: int     # Max number of log files
+    example:
+      level: "info"
+      format: "json"
+      output: "stdout"
+      rotation: true
+      max_size: "100M"
+      max_files: 10
+
+  # Network configuration
+  networks:
+    type: list[str]
+    required: false
+    default: []
+    description: "Docker networks to connect to"
+    example:
+      - "spark-network"
+      - "monitoring-network"
+
+  # Security configuration
+  security:
+    type: object
+    required: false
+    description: "Security settings"
+    schema:
+      run_as_user: str
+      privileged: bool
+      cap_add: list[str]
+      cap_drop: list[str]
+      read_only_root_fs: bool
+      secrets: list[str]
+    example:
+      run_as_user: "1000:1000"
+      privileged: false
+      cap_drop:
+        - ALL
+      read_only_root_fs: false
+
+  # Deployment configuration
+  deployment:
+    type: object
+    required: false
+    description: "Deployment settings"
+    schema:
+      replicas: int
+      restart_policy: str  # no/always/on-failure/unless-stopped
+      update_config:
+        parallelism: int
+        delay: str
+      rollback_config:
+        enabled: bool
+    example:
+      replicas: 1
+      restart_policy: "unless-stopped"
+
+  # Testing configuration
+  testing:
+    type: object
+    required: false
+    description: "Testing configuration"
+    schema:
+      unit_tests: str     # Path to unit tests
+      integration_tests: str # Path to integration tests
+      smoke_tests: list[str] # List of smoke test commands
+    example:
+      unit_tests: "tests/unit"
+      integration_tests: "tests/integration"
+      smoke_tests:
+        - "curl http://localhost:8080/health"
+        - "python -m pytest tests/smoke/"
+
+# Example full configuration
+example_config:
+  name: "ollama-inference"
+  display_name: "Ollama Inference Engine"
+  version: "1.0.0"
+  description: "GPU-accelerated LLM inference using Ollama"
+  agent_id: "agent5"
+  dependencies:
+    - "docker"
+    - "nvidia-container-toolkit"
+  ports:
+    - name: "api"
+      container: 11434
+      host: 11434
+      protocol: "tcp"
+      required: true
+  volumes:
+    - name: "ollama-data"
+      container_path: "/root/.ollama"
+      type: "volume"
+      read_only: false
+      required: true
+  gpu_required: true
+  gpu_config:
+    count: -1
+    memory_gb: 8
+    capabilities:
+      - compute
+      - utility
+  resources:
+    memory_limit: "16G"
+    shm_size: "8G"
+  environment:
+    CUDA_VISIBLE_DEVICES: "all"
+    NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+  health_check:
+    enabled: true
+    endpoint: "/api/tags"
+    port: 11434
+    interval: 30
+    timeout: 10
+    retries: 3
+    start_period: 60
+  monitoring:
+    enabled: true
+    prometheus: true
+    metrics_port: 9090
+  logging:
+    level: "info"
+    format: "json"
+    output: "stdout"
+  networks:
+    - "inference-network"
+  deployment:
+    replicas: 1
+    restart_policy: "unless-stopped"
