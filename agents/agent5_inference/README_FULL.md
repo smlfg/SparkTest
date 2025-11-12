@@ -248,6 +248,160 @@ curl -X POST http://localhost:8888/api/chat \
 3. Select a model from the dropdown
 4. Start chatting!
 
+## 🔗 Integration with Agent 3 (Training)
+
+### Import Fine-Tuned Models
+
+Import models fine-tuned with Agent 3 (LLaMA-Factory) into Ollama:
+
+```bash
+# Import a fine-tuned LoRA model
+python agents/agent5_inference/scripts/import_finetuned.py \
+  --checkpoint /path/to/agent3/output/student-chat-model \
+  --model-name student-chatbot \
+  --base-model meta-llama/Llama-3.1-8B-Instruct
+
+# Test the imported model
+ollama run student-chatbot
+```
+
+**Features:**
+- Automatic LoRA adapter merging
+- GGUF conversion (if llama.cpp available)
+- Ollama Modelfile generation
+- One-command import process
+
+**Options:**
+```bash
+--checkpoint PATH       # Path to LoRA checkpoint from Agent 3
+--model-name NAME       # Name for imported model in Ollama
+--base-model MODEL      # Base model used for fine-tuning
+--temperature FLOAT     # Default temperature (default: 0.7)
+--context-length INT    # Context window (default: 4096)
+--keep-merged          # Keep merged model directory
+--no-cleanup           # Don't clean up temporary files
+```
+
+### Model Comparison API
+
+Compare multiple models side-by-side to evaluate fine-tuning results:
+
+```bash
+# Compare base model vs fine-tuned model
+curl -X POST http://localhost:8888/api/compare \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Explain photosynthesis in simple terms",
+    "models": ["llama3.1:8b", "student-chatbot"],
+    "max_tokens": 200,
+    "temperature": 0.7
+  }'
+```
+
+**Response:**
+```json
+{
+  "prompt": "Explain photosynthesis...",
+  "models_compared": 2,
+  "successful": 2,
+  "failed": 0,
+  "average_tokens_per_sec": 11.9,
+  "average_duration_ms": 1823.5,
+  "results": [
+    {
+      "model": "llama3.1:8b",
+      "response": "Photosynthesis is the process...",
+      "eval_duration_ms": 1850.23,
+      "tokens_per_second": 12.1,
+      "total_tokens": 45
+    },
+    {
+      "model": "student-chatbot",
+      "response": "Photosynthesis is how plants...",
+      "eval_duration_ms": 1796.77,
+      "tokens_per_second": 11.7,
+      "total_tokens": 42
+    }
+  ]
+}
+```
+
+**Python Example:**
+```python
+import requests
+
+response = requests.post(
+    "http://localhost:8888/api/compare",
+    json={
+        "prompt": "What is a neural network?",
+        "models": ["llama3.1:8b", "student-chatbot", "mistral:7b"],
+        "max_tokens": 150
+    }
+)
+
+results = response.json()
+for result in results["results"]:
+    print(f"{result['model']}: {result['tokens_per_second']:.1f} tok/s")
+```
+
+### Student Benchmark Suite
+
+Comprehensive benchmarking for evaluating model performance:
+
+```bash
+# Benchmark a single model
+python agents/agent5_inference/scripts/student_benchmark.py \
+  --model student-chatbot
+
+# Compare multiple models
+python agents/agent5_inference/scripts/student_benchmark.py \
+  --models llama3.1:8b student-chatbot mistral:7b
+
+# Use custom prompts
+python agents/agent5_inference/scripts/student_benchmark.py \
+  --model student-chatbot \
+  --prompts my_prompts.txt \
+  --max-tokens 300
+
+# Export results to JSON
+python agents/agent5_inference/scripts/student_benchmark.py \
+  --models llama3.1:8b student-chatbot \
+  --output benchmark_results.json
+```
+
+**Default Benchmarks:**
+- General knowledge questions
+- Technical explanations
+- Translation tasks
+- Code generation
+- Creative writing
+- Math reasoning
+- Language understanding
+- Summarization
+- Problem solving
+- Comparative analysis
+
+**Output:**
+```
+==================================================================
+COMPARISON RESULTS
+==================================================================
+╔═══════════════════╦══════════════════╦═══════════════════╦═════════════╦══════════════╗
+║ Model             ║ Avg Latency (s)  ║ Throughput (tok/s)║ Success Rate║ Total Tokens ║
+╠═══════════════════╬══════════════════╬═══════════════════╬═════════════╬══════════════╣
+║ llama3.1:8b       ║ 1.85             ║ 12.3              ║ 100.0%      ║ 450          ║
+║ student-chatbot   ║ 1.92             ║ 11.8              ║ 100.0%      ║ 445          ║
+║ mistral:7b        ║ 1.67             ║ 13.1              ║ 100.0%      ║ 435          ║
+╚═══════════════════╩══════════════════╩═══════════════════╩═════════════╩══════════════╝
+```
+
+**Use Cases:**
+- Evaluate fine-tuned models vs base models
+- Compare different quantization levels
+- Test model performance across task types
+- Generate performance reports for students
+- Validate training improvements
+
 ## 🔧 Configuration
 
 ### Environment Variables

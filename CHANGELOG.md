@@ -5,6 +5,48 @@ All notable changes to the DGX Spark Playbooks project will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2024-01-15
+
+### Added - Agent 3 Integration & Model Evaluation
+
+#### Model Import from Agent 3
+- **import_finetuned.py**: Automated import of fine-tuned models from Agent 3
+  - LoRA adapter merging with base models
+  - GGUF conversion support (via llama.cpp)
+  - Ollama Modelfile generation
+  - Alternative PEFT-based merge method
+  - Automatic model validation and verification
+  - Configurable temperature and context length
+  - Cleanup and temporary file management
+
+#### Model Comparison API
+- **POST /api/compare**: New endpoint for side-by-side model evaluation
+  - Compare multiple models with the same prompt
+  - Detailed performance metrics (latency, throughput, tokens)
+  - Summary statistics (average latency, average throughput)
+  - Error handling for failed models
+  - Support for both Ollama and NIM providers
+  - Useful for evaluating fine-tuned vs base models
+
+#### Student Benchmark Suite
+- **student_benchmark.py**: Comprehensive model benchmarking tool
+  - 10 default benchmark prompts across diverse task types
+  - Single model benchmarking with detailed statistics
+  - Multi-model comparison with tabular output
+  - Custom prompt file support
+  - JSON export for results
+  - Statistical analysis (mean, median, min, max, std dev)
+  - Success rate tracking
+  - Throughput and latency measurements
+  - Comparison ranking by performance
+
+#### Documentation Updates
+- Added "Integration with Agent 3" section
+- Model import usage examples
+- Model comparison API documentation
+- Benchmark suite usage guide
+- Python and cURL examples for all features
+
 ## [1.0.0] - 2024-01-15
 
 ### Added

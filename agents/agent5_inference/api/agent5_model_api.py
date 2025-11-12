@@ -105,6 +105,25 @@ class ChatCompletionRequest(BaseModel):
     provider: Optional[ModelProvider] = None
 
 
+class ModelComparisonRequest(BaseModel):
+    """Model comparison request schema"""
+    prompt: str
+    models: List[str]
+    max_tokens: Optional[int] = 200
+    temperature: Optional[float] = 0.7
+    provider: Optional[ModelProvider] = ModelProvider.OLLAMA
+
+
+class ModelComparisonResult(BaseModel):
+    """Model comparison result schema"""
+    model: str
+    response: str
+    eval_duration_ms: float
+    tokens_per_second: float
+    total_tokens: int
+    error: Optional[str] = None
+
+
 # Configuration
 class Config:
     """API Configuration"""
@@ -442,6 +461,109 @@ async def list_providers():
             }
         ]
     }
+
+
+@app.post("/api/compare")
+async def compare_models(request: ModelComparisonRequest):
+    """
+    Compare multiple models with the same prompt
+
+    Tests the same prompt across multiple models and returns
+    comparative metrics including response time and throughput.
+    Useful for evaluating fine-tuned models against base models.
+
+    Example:
+        Compare base model vs fine-tuned:
+        {
+            "prompt": "Explain photosynthesis in simple terms",
+            "models": ["llama3.1:8b", "student-chatbot"],
+            "max_tokens": 200
+        }
+    """
+    results = []
+
+    for model_name in request.models:
+        try:
+            start_time = time.time()
+
+            # Create completion request
+            completion_req = CompletionRequest(
+                model=model_name,
+                prompt=request.prompt,
+                max_tokens=request.max_tokens,
+                temperature=request.temperature,
+                stream=False,
+                provider=request.provider
+            )
+
+            # Get completion
+            if request.provider == ModelProvider.OLLAMA:
+                response = await manager.ollama_completion(completion_req)
+
+                # Extract metrics
+                eval_duration_ms = response.get("eval_duration", 0) / 1_000_000  # ns to ms
+                total_tokens = response.get("eval_count", 0)
+                tokens_per_sec = total_tokens / (eval_duration_ms / 1000) if eval_duration_ms > 0 else 0
+                response_text = response.get("response", "")
+
+            else:  # NIM
+                response = await manager.nim_completion(completion_req)
+
+                # NIM uses different format
+                elapsed_time = (time.time() - start_time) * 1000  # to ms
+                eval_duration_ms = elapsed_time
+
+                if "choices" in response:
+                    response_text = response["choices"][0].get("text", "")
+                    total_tokens = response.get("usage", {}).get("completion_tokens", 0)
+                else:
+                    response_text = str(response)
+                    total_tokens = len(response_text.split())
+
+                tokens_per_sec = total_tokens / (elapsed_time / 1000) if elapsed_time > 0 else 0
+
+            # Add successful result
+            results.append(ModelComparisonResult(
+                model=model_name,
+                response=response_text,
+                eval_duration_ms=round(eval_duration_ms, 2),
+                tokens_per_second=round(tokens_per_sec, 2),
+                total_tokens=total_tokens
+            ))
+
+        except Exception as e:
+            logger.error(f"Error comparing model {model_name}: {e}")
+            results.append(ModelComparisonResult(
+                model=model_name,
+                response="",
+                eval_duration_ms=0,
+                tokens_per_second=0,
+                total_tokens=0,
+                error=str(e)
+            ))
+
+    # Calculate summary statistics
+    successful_results = [r for r in results if r.error is None]
+
+    summary = {
+        "prompt": request.prompt,
+        "models_compared": len(request.models),
+        "successful": len(successful_results),
+        "failed": len(results) - len(successful_results),
+        "results": [r.dict() for r in results]
+    }
+
+    if successful_results:
+        summary["average_tokens_per_sec"] = round(
+            sum(r.tokens_per_second for r in successful_results) / len(successful_results),
+            2
+        )
+        summary["average_duration_ms"] = round(
+            sum(r.eval_duration_ms for r in successful_results) / len(successful_results),
+            2
+        )
+
+    return summary
 
 
 def main():
