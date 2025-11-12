@@ -10,6 +10,7 @@ import json
 # Quantized Models Registry
 QUANTIZED_MODELS = {
     "fp4_models": ["llama-70b-fp4", "mistral-7b-fp4"],
+    "int8_models": ["llama-70b-int8", "mistral-7b-int8"],
     "quant_script": "quantize_to_fp4.sh"
 }
 
@@ -25,7 +26,7 @@ class QuantizationEngine:
         Initialize quantization engine
 
         Args:
-            precision: Quantization precision ('fp4', 'nf4', 'int4')
+            precision: Quantization precision ('fp4', 'nf4', 'int4', 'int8')
             device: Target device ('cuda', 'cpu')
         """
         self.precision = precision
@@ -53,14 +54,29 @@ class QuantizationEngine:
         Returns:
             Dictionary with quantization results and metadata
         """
-        from agent8.quantization.quantizer import FP4Quantizer
-
-        quantizer = FP4Quantizer(
-            precision=self.precision,
-            device=self.device,
-            compute_dtype=compute_dtype,
-            double_quant=double_quant
-        )
+        # Choose quantizer based on precision
+        if self.precision in ["fp4", "nf4", "int4"]:
+            from agent8.quantization.quantizer import FP4Quantizer
+            quantizer = FP4Quantizer(
+                precision=self.precision,
+                device=self.device,
+                compute_dtype=compute_dtype,
+                double_quant=double_quant
+            )
+        elif self.precision == "int8":
+            from agent8.quantization.int8_quantizer import INT8Quantizer
+            quantizer = INT8Quantizer(
+                device=self.device
+            )
+            result = quantizer.quantize_model(
+                model_name=model_name,
+                model_path=model_path,
+                output_path=output_path
+            )
+            self._register_model(result)
+            return result
+        else:
+            raise ValueError(f"Unsupported precision: {self.precision}")
 
         result = quantizer.quantize_model(
             model_name=model_name,
@@ -201,6 +217,15 @@ def get_quantization_config(precision: str = "fp4") -> Dict:
             "double_quant": False,
             "compression_ratio": 4.0,
             "recommended_for": ["bert", "roberta"]
+        },
+        "int8": {
+            "bits": 8,
+            "quant_type": "int8",
+            "compute_dtype": "int8",
+            "symmetric": True,
+            "per_channel": True,
+            "compression_ratio": 2.0,
+            "recommended_for": ["all_models_production"]
         }
     }
 
